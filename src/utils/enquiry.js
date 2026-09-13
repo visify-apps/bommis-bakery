@@ -3,6 +3,7 @@ import {
   ALLOWED_REFERENCE_TYPES,
   MAX_REFERENCE_IMAGE_BYTES,
 } from '../data/enquiryOptions'
+import { validateStep } from './enquiryRules'
 
 /**
  * @param {string} preferredDate - YYYY-MM-DD
@@ -52,25 +53,25 @@ export function validateEnquiryStep(stepIndex, draft, options = {}) {
   switch (stepIndex) {
     case 0: {
       if (mode !== 'custom') return ''
-      if (!draft.requestType) return 'Please choose what you need.'
+      if (!draft.requestType) return 'Choose one.'
       if (draft.requestType === 'Other' && !draft.requestTypeOther?.trim()) {
-        return 'Please describe what you need.'
+        return 'Say what you need.'
       }
       return ''
     }
     case 1: {
       if (mode === 'product-simple') return ''
-      if (!draft.occasion) return 'Please select an occasion.'
+      if (!draft.occasion) return 'Choose an occasion.'
       if (draft.occasion === 'Other' && !draft.occasionOther?.trim()) {
-        return 'Please describe the occasion.'
+        return 'Say the occasion.'
       }
       return ''
     }
     case 2: {
       if (mode === 'product-simple') {
         const qty = Number(draft.servings)
-        if (!draft.servings?.trim()) return 'Please enter quantity.'
-        if (Number.isNaN(qty) || qty < 1) return 'Enter a valid quantity.'
+        if (!draft.servings?.trim()) return 'Enter a quantity.'
+        if (Number.isNaN(qty) || qty < 1) return 'Enter a quantity.'
       }
       return ''
     }
@@ -86,29 +87,29 @@ export function validateEnquiryStep(stepIndex, draft, options = {}) {
       return ''
     }
     case 4: {
-      if (!draft.preferredDate) return 'Please select a preferred date.'
+      if (!draft.preferredDate) return 'Pick a date.'
       if (isPreferredDateTooSoon(draft.preferredDate, minimumPreorderDays)) {
-        return `Please choose a date at least ${minimumPreorderDays} days from today.`
+        return `Need ${minimumPreorderDays} days notice.`
       }
       return ''
     }
     case 5: {
-      if (!draft.fulfillmentType) return 'Please choose pickup or delivery.'
+      if (!draft.fulfillmentType) return 'Choose pickup or delivery.'
       if (draft.fulfillmentType === 'delivery') {
-        if (!draft.deliveryAddress?.address?.trim()) return 'Please enter a delivery address.'
-        if (!draft.deliveryAddress?.area?.trim()) return 'Please enter an area.'
-        if (!draft.deliveryAddress?.pincode?.trim()) return 'Please enter a pincode.'
+        if (!draft.deliveryAddress?.address?.trim()) return 'Enter the address.'
+        if (!draft.deliveryAddress?.area?.trim()) return 'Enter the area.'
+        if (!draft.deliveryAddress?.pincode?.trim()) return 'Enter the pin.'
         if (!/^\d{6}$/.test(draft.deliveryAddress.pincode.trim())) {
-          return 'Pincode should be 6 digits.'
+          return 'Pin should be 6 digits.'
         }
       }
       return ''
     }
     case 6: {
-      if (!draft.customerName?.trim()) return 'Please enter your name.'
-      if (!draft.customerPhone?.trim()) return 'WhatsApp phone number is required.'
+      if (!draft.customerName?.trim()) return 'Enter your name.'
+      if (!draft.customerPhone?.trim()) return 'Enter WhatsApp number.'
       if (!isLikelyIndianMobile(draft.customerPhone)) {
-        return 'Enter a valid 10-digit Indian mobile number.'
+        return 'Enter a 10-digit mobile.'
       }
       if (draft.customerEmail?.trim()) {
         const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.customerEmail.trim())
@@ -150,19 +151,10 @@ export function validateEnquiryStep(stepIndex, draft, options = {}) {
 
 export function validateByStepId(stepId, draft, options = {}) {
   if (stepId === 'product') {
-    if (!draft.productId) return 'Product is missing. Go back to the menu.'
+    if (!draft.productId) return 'Pick a cake from the menu.'
     return ''
   }
-  if (stepId === 'quantity') return validateEnquiryStep(2, draft, { ...options, mode: 'product-simple' })
-  if (stepId === 'need') return validateEnquiryStep(0, draft, options)
-  if (stepId === 'occasion') return validateEnquiryStep(1, draft, options)
-  if (stepId === 'requirements') return validateEnquiryStep(2, draft, options)
-  if (stepId === 'reference') return validateEnquiryStep(3, draft, options)
-  if (stepId === 'date') return validateEnquiryStep(4, draft, options)
-  if (stepId === 'fulfillment') return validateEnquiryStep(5, draft, options)
-  if (stepId === 'contact') return validateEnquiryStep(6, draft, options)
-  if (stepId === 'review') return validateEnquiryStep(7, draft, options)
-  return ''
+  return validateStep(stepId, draft, options)
 }
 
 export function resolveRequestTypeLabel(draft) {

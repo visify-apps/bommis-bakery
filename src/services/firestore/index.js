@@ -15,9 +15,11 @@ export {
 export {
   listCustomers,
   getCustomer,
+  updateCustomer,
   upsertCustomerFromEnquiry,
   recordCustomerOrder,
   customerIdFromPhone,
+  enquiryMatchesCustomer,
 } from './customers.js'
 export {
   listOrders,
@@ -27,6 +29,7 @@ export {
 } from './orders.js'
 export {
   listAdminProducts,
+  getAdminProduct,
   saveProduct,
   setProductAvailability,
 } from './adminProducts.js'

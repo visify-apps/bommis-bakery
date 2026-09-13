@@ -1,67 +1,55 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useBusiness } from '../../context/BusinessContext'
 import { useProducts } from '../../hooks/useCatalogue'
-import { formatProductPrice } from '../../utils/pricing'
+import { ShopCard } from '../../components/customer/ShopCard'
+import { AFTER_ENQUIRY_HOME_KEY } from '../../services/whatsapp'
 
 export function HomePage() {
   const { business } = useBusiness()
+
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(AFTER_ENQUIRY_HOME_KEY)
+    } catch {
+      // ignore
+    }
+  }, [])
   const { products, loading } = useProducts()
-  const featured = products.filter((p) => p.imageUrls?.[0]).slice(0, 6)
-  const showcase = featured.length ? featured : products.slice(0, 6)
+  const days = business.minimumPreorderDays || 4
+  const withPhoto = products.filter((p) => p.imageUrls?.[0])
+  const showcase = (withPhoto.length ? withPhoto : products).slice(0, 6)
 
   return (
-    <div className="home">
-      <section className="home-stage">
-        <div className="home-stage__copy">
-          <p className="home-kicker">Home bakery</p>
-          <h1>{business.displayName}</h1>
-          <p className="home-line">
-            {business.description ||
-              'Custom celebration cakes, brownies, and bento cakes — enquire in minutes.'}
-          </p>
-          <div className="home-actions">
-            <Link className="btn btn-primary" to="/custom-cake">
-              Start enquiry
-            </Link>
-            <Link className="btn btn-text" to="/menu">
-              Browse menu
-            </Link>
-          </div>
-          <p className="home-note">Preorder about {business.minimumPreorderDays || 4}–5 days · Pickup & delivery</p>
+    <div className="shop-home">
+      <section className="shop-hero">
+        <p className="shop-hero__kicker">Home bakery</p>
+        <h1>{business.displayName}</h1>
+        <p className="shop-hero__line">
+          Celebration cakes, brownies, and bento — tell us the date, we’ll bake it with care.
+        </p>
+        <div className="shop-hero__actions">
+          <Link className="btn btn-primary" to="/custom-cake">
+            Start an enquiry
+          </Link>
+          <Link className="btn btn-secondary" to="/menu">
+            See the menu
+          </Link>
         </div>
+        <p className="shop-hero__note">{days} days preorder · Pickup · Delivery on request</p>
       </section>
 
-      <section className="home-strip">
-        <div className="section-head">
-          <h2>From the kitchen</h2>
+      <section className="page shop-page shop-home__menu">
+        <div className="shop-section-head">
+          <h2>Loved this week</h2>
           <Link to="/menu">Full menu</Link>
         </div>
         {loading ? <p className="muted">Loading…</p> : null}
-        <div className="product-rail">
+        <div className="shop-grid">
           {showcase.map((product) => (
-            <Link key={product.id} to={`/products/${product.id}`} className="rail-card">
-              <div className="rail-card__img">
-                {product.imageUrls?.[0] ? (
-                  <img src={product.imageUrls[0]} alt="" loading="lazy" />
-                ) : (
-                  <span>{product.name?.charAt(0)}</span>
-                )}
-              </div>
-              <div className="rail-card__meta">
-                <strong>{product.name}</strong>
-                <span>{formatProductPrice(product)}</span>
-              </div>
-            </Link>
+            <ShopCard key={product.id} product={product} />
           ))}
         </div>
-      </section>
-
-      <section className="home-cta-band">
-        <h2>Need something custom?</h2>
-        <p>Share a theme, date, and reference — we’ll quote you on WhatsApp.</p>
-        <Link className="btn btn-primary" to="/custom-cake">
-          Custom cake enquiry
-        </Link>
       </section>
     </div>
   )

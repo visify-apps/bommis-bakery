@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { appConfig, isFirebaseConfigured } from '../config/appConfig'
 import { getFirestoreDb } from '../services/firebase'
+import { readDemoBusiness, saveBusinessSettings } from '../services/firestore/businessSettings'
 
 const BusinessContext = createContext(null)
 
@@ -32,6 +33,10 @@ export function BusinessProvider({ children }) {
 
     async function load() {
       if (!isFirebaseConfigured()) {
+        const demo = readDemoBusiness()
+        if (demo) {
+          setBusiness((prev) => ({ ...prev, ...demo }))
+        }
         setLoading(false)
         return
       }
@@ -75,9 +80,15 @@ export function BusinessProvider({ children }) {
     }
   }, [])
 
+  const saveBusiness = useCallback(async (patch) => {
+    const saved = await saveBusinessSettings(patch, business.businessId)
+    setBusiness((prev) => ({ ...prev, ...saved }))
+    return saved
+  }, [business.businessId])
+
   const value = useMemo(
-    () => ({ business, loading, error }),
-    [business, loading, error],
+    () => ({ business, loading, error, saveBusiness }),
+    [business, loading, error, saveBusiness],
   )
 
   return (

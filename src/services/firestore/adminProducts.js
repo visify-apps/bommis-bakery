@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -52,6 +53,20 @@ export async function listAdminProducts(businessId = appConfig.defaultBusinessId
     return items.length ? items : readDemo()
   } catch {
     return readDemo()
+  }
+}
+
+export async function getAdminProduct(productId, businessId = appConfig.defaultBusinessId) {
+  if (!productId) return null
+  if (!isFirebaseConfigured()) {
+    return readDemo().find((p) => p.id === productId) || null
+  }
+  try {
+    const snap = await getDoc(doc(getFirestoreDb(), 'businesses', businessId, 'products', productId))
+    if (snap.exists()) return { id: snap.id, ...snap.data() }
+    return readDemo().find((p) => p.id === productId) || null
+  } catch {
+    return readDemo().find((p) => p.id === productId) || null
   }
 }
 

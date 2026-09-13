@@ -46,6 +46,13 @@ export function customerIdFromPhone(phone) {
   return `phone_${digits}`
 }
 
+export function enquiryMatchesCustomer(enquiry, customer) {
+  if (!enquiry || !customer) return false
+  if (enquiry.customerId && enquiry.customerId === customer.id) return true
+  const phone = enquiry.customerSnapshot?.phone
+  return phone ? customerIdFromPhone(phone) === customer.id : false
+}
+
 function normalize(id, data) {
   return {
     id,
@@ -169,6 +176,29 @@ export async function upsertCustomerFromEnquiry(enquiry, businessId = appConfig.
       totalEnquiries: (data.totalEnquiries || 0) + (enquiry.customerId ? 0 : 1),
     })
   }
+  return getCustomer(customerId, businessId)
+}
+
+export async function updateCustomer(customerId, patch, businessId = appConfig.defaultBusinessId) {
+  if (!customerId) throw new Error('Customer required')
+  const body = {
+    notes: patch.notes ?? '',
+    updatedAt: new Date().toISOString(),
+  }
+
+  if (!isFirebaseConfigured()) {
+    const items = readDemo()
+    const idx = items.findIndex((c) => c.id === customerId)
+    if (idx === -1) throw new Error('Customer not found')
+    items[idx] = { ...items[idx], ...body }
+    writeDemo(items)
+    return items[idx]
+  }
+
+  await updateDoc(doc(getFirestoreDb(), 'businesses', businessId, 'customers', customerId), {
+    notes: patch.notes ?? '',
+    updatedAt: serverTimestamp(),
+  })
   return getCustomer(customerId, businessId)
 }
 

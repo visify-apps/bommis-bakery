@@ -7,10 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:pages": "VITE_BASE_PATH=/cakes-by-kee/ vite build",
+    "deploy:pages": "npm run build:pages && gh-pages -d dist"
   },
   "dependencies": {
     "firebase": "^12.10.0",
+    "lucide-react": "^1.45.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.13.1"

@@ -17,6 +17,7 @@ export const demoCustomers = [
     totalOrders: 0,
     totalSpend: 0,
     tags: [],
+    notes: '',
   },
   {
     id: 'phone_919800000002',

@@ -29,19 +29,19 @@ export const EGG_OPTIONS = [
 ]
 
 export const FULFILLMENT_TYPES = [
-  { value: 'pickup', label: 'Self pickup' },
+  { value: 'pickup', label: 'Pickup' },
   { value: 'delivery', label: 'Delivery' },
 ]
 
 export const ENQUIRY_STEPS = [
-  { id: 'need', title: 'What do you need?', short: 'Need' },
+  { id: 'need', title: 'Need', short: 'Need' },
   { id: 'occasion', title: 'Occasion', short: 'Occasion' },
-  { id: 'requirements', title: 'Cake requirements', short: 'Details' },
-  { id: 'reference', title: 'Reference / inspiration', short: 'Reference' },
-  { id: 'date', title: 'Preferred date', short: 'Date' },
-  { id: 'fulfillment', title: 'Pickup or delivery', short: 'Fulfillment' },
-  { id: 'contact', title: 'Your details', short: 'Contact' },
-  { id: 'review', title: 'Review & submit', short: 'Review' },
+  { id: 'requirements', title: 'Details', short: 'Details' },
+  { id: 'reference', title: 'Photo', short: 'Photo' },
+  { id: 'date', title: 'Date', short: 'Date' },
+  { id: 'fulfillment', title: 'Pickup', short: 'Pickup' },
+  { id: 'contact', title: 'You', short: 'You' },
+  { id: 'review', title: 'Check', short: 'Check' },
 ]
 
 export const MAX_REFERENCE_IMAGE_BYTES = 5 * 1024 * 1024

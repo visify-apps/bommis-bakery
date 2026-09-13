@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EnquiryProgress } from '../../components/customer/EnquiryProgress'
 import {
   EnquiryStepContact,
@@ -7,7 +7,6 @@ import {
   EnquiryStepFulfillment,
   EnquiryStepNeed,
   EnquiryStepOccasion,
-  EnquiryStepProduct,
   EnquiryStepQuantity,
   EnquiryStepReference,
   EnquiryStepRequirements,
@@ -17,9 +16,12 @@ import { useBusiness } from '../../context/BusinessContext'
 import { useProduct } from '../../hooks/useCatalogue'
 import { createEmptyEnquiryDraft } from '../../data/enquiryOptions'
 import { buildDraftFromProduct, getEnquiryFlow } from '../../data/enquiryFlows'
-import { createSubmissionToken, validateByStepId } from '../../utils/enquiry'
+import { createSubmissionToken } from '../../utils/enquiry'
 import { submitEnquiry } from '../../services/firestore/enquiries'
-import { canAutoPrice, lineTotal, suggestedAdvance } from '../../utils/autoPrice'
+import { suggestedAdvance } from '../../utils/autoPrice'
+import { customerPrice, estimateLine, isProductOffered, validateStep } from '../../utils/enquiryRules'
+import { useSmartBack } from '../../hooks/useSmartBack'
+import { AFTER_ENQUIRY_HOME_KEY } from '../../services/whatsapp'
 
 function draftKey(productId) {
   return productId ? `ck_enquiry_draft_${productId}` : 'ck_enquiry_draft_custom'
@@ -39,6 +41,7 @@ export function CustomCakePage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const productId = params.get('product')
+  const leave = useSmartBack(productId ? `/products/${productId}` : '/menu')
   const { product, loading: productLoading } = useProduct(productId)
   const { business } = useBusiness()
   const minimumPreorderDays = business.minimumPreorderDays || 4
@@ -55,13 +58,35 @@ export function CustomCakePage() {
   const submissionTokenRef = useRef(createSubmissionToken())
   const productPrefillDone = useRef(false)
 
-  // Reset draft when switching product vs custom
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem(AFTER_ENQUIRY_HOME_KEY) === 'home') {
+        sessionStorage.removeItem(AFTER_ENQUIRY_HOME_KEY)
+        navigate('/', { replace: true })
+        return
+      }
+    } catch {
+      // ignore
+    }
     setStepIndex(0)
     setDraft(loadDraft(productId))
     productPrefillDone.current = false
     submissionTokenRef.current = createSubmissionToken()
-  }, [productId])
+  }, [productId, navigate])
+
+  useEffect(() => {
+    function onPageShow() {
+      try {
+        if (sessionStorage.getItem(AFTER_ENQUIRY_HOME_KEY) !== 'home') return
+        sessionStorage.removeItem(AFTER_ENQUIRY_HOME_KEY)
+        navigate('/', { replace: true })
+      } catch {
+        // ignore
+      }
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [navigate])
 
   const previewUrl = useMemo(() => {
     if (!referenceFile) return null
@@ -87,16 +112,20 @@ export function CustomCakePage() {
     productPrefillDone.current = true
     setDraft((d) => {
       const next = buildDraftFromProduct(product, d)
-      if (canAutoPrice(product) && next.servings) {
-        const t = lineTotal(product.basePrice, next.servings)
-        if (t != null) {
-          const adv = suggestedAdvance(t)
-          next.quotedPrice = t
-          next.advanceRequired = adv
-          next.balanceAmount = t - adv
-          next.autoPriced = true
-          next.priceLocked = true
-        }
+      const total = estimateLine(product, next.servings)
+      if (total != null) {
+        const adv = suggestedAdvance(total)
+        next.quotedPrice = total
+        next.advanceRequired = adv
+        next.balanceAmount = total - adv
+        next.autoPriced = true
+        next.priceLocked = true
+      } else {
+        next.quotedPrice = null
+        next.advanceRequired = null
+        next.balanceAmount = null
+        next.autoPriced = false
+        next.priceLocked = false
       }
       return next
     })
@@ -105,9 +134,10 @@ export function CustomCakePage() {
   const currentStep = steps[stepIndex]
 
   function goNext() {
-    const error = validateByStepId(currentStep.id, draft, {
+    const error = validateStep(currentStep.id, draft, {
       minimumPreorderDays,
       referenceFile,
+      product,
       mode: flow.mode,
     })
     if (error) {
@@ -125,9 +155,10 @@ export function CustomCakePage() {
   }
 
   async function handleSubmit() {
-    const error = validateByStepId('review', draft, {
+    const error = validateStep('review', draft, {
       minimumPreorderDays,
       referenceFile,
+      product,
       mode: flow.mode,
     })
     if (error) {
@@ -146,21 +177,20 @@ export function CustomCakePage() {
         referenceFile,
         submissionToken: submissionTokenRef.current,
         businessId: business.businessId,
+        business,
       })
       try {
         sessionStorage.removeItem(draftKey(productId))
       } catch {
         // ignore
       }
-      navigate(
-        `/enquiry/success?enquiry=${encodeURIComponent(result.enquiryNumber)}&id=${encodeURIComponent(result.enquiryId)}${result.demo ? '&demo=1' : ''}`,
-        { replace: true },
-      )
+      if (result.whatsappUrl) {
+        navigate('/', { replace: true })
+        return
+      }
+      setSubmitError('Enquiry saved. We could not open WhatsApp — message us with your enquiry ID.')
     } catch (err) {
-      setSubmitError(
-        err?.message ||
-          'Something went wrong while submitting your enquiry. Your information has not been confirmed. Please try again.',
-      )
+      setSubmitError(err?.message || 'Could not send. Try again.')
       submissionTokenRef.current = createSubmissionToken()
     } finally {
       setSubmitting(false)
@@ -170,92 +200,90 @@ export function CustomCakePage() {
   if (productId && productLoading) {
     return (
       <section className="page enquiry-page">
-        <p className="muted">Loading product…</p>
+        <p className="muted">Loading…</p>
       </section>
     )
   }
 
-  if (productId && !productLoading && !product) {
+  if (productId && !productLoading && !isProductOffered(product)) {
     return (
       <section className="page enquiry-page">
-        <h1>Product not found</h1>
-        <p className="lede">This item may be unavailable.</p>
-        <Link className="btn btn-primary" to="/menu">
-          Back to menu
-        </Link>
+        <button type="button" className="back-link" onClick={leave}>
+          ← Back
+        </button>
+        <p className="muted">This item is not on the menu right now.</p>
       </section>
     )
   }
 
   const stepProps = { draft, setDraft }
+  const price = customerPrice(product)
 
   return (
     <section className="page enquiry-page">
-      <header className="page-header">
-        <h1>{flow.title}</h1>
-        <p className="lede">{flow.subtitle}</p>
-      </header>
+      <div className="job-detail-bar">
+        {stepIndex > 0 ? (
+          <button type="button" className="back-link" onClick={goBack} disabled={submitting}>
+            ← Back
+          </button>
+        ) : (
+          <button type="button" className="back-link" onClick={leave}>
+            ← Back
+          </button>
+        )}
+        <span className={`shop-price shop-price--${price.kind}`}>{price.short}</span>
+      </div>
+
+      {product ? (
+        <div className="enquiry-context">
+          {product.imageUrls?.[0] ? <img src={product.imageUrls[0]} alt="" /> : null}
+          <div>
+            <strong>{product.name}</strong>
+            <p>{price.label}</p>
+          </div>
+        </div>
+      ) : null}
 
       <EnquiryProgress stepIndex={stepIndex} total={steps.length} labels={steps} />
+      <h2 className="enquiry-question">{currentStep.title}</h2>
 
-      <div className="enquiry-panel">
-        {currentStep.id === 'need' && <EnquiryStepNeed {...stepProps} />}
-        {currentStep.id === 'product' && <EnquiryStepProduct product={product} />}
-        {currentStep.id === 'occasion' && <EnquiryStepOccasion {...stepProps} />}
-        {currentStep.id === 'requirements' && <EnquiryStepRequirements {...stepProps} />}
-        {currentStep.id === 'quantity' && (
-          <EnquiryStepQuantity {...stepProps} product={product} />
-        )}
-        {currentStep.id === 'reference' && (
-          <EnquiryStepReference
-            {...stepProps}
-            referenceFile={referenceFile}
-            setReferenceFile={setReferenceFile}
-            previewUrl={previewUrl}
-          />
-        )}
-        {currentStep.id === 'date' && (
-          <EnquiryStepDate {...stepProps} minimumPreorderDays={minimumPreorderDays} />
-        )}
-        {currentStep.id === 'fulfillment' && <EnquiryStepFulfillment {...stepProps} />}
-        {currentStep.id === 'contact' && <EnquiryStepContact {...stepProps} />}
-        {currentStep.id === 'review' && (
-          <EnquiryStepReview
-            draft={draft}
-            previewUrl={previewUrl}
-            minimumPreorderDays={minimumPreorderDays}
-          />
-        )}
+      {currentStep.id === 'need' && <EnquiryStepNeed {...stepProps} />}
+      {currentStep.id === 'occasion' && <EnquiryStepOccasion {...stepProps} />}
+      {currentStep.id === 'requirements' && <EnquiryStepRequirements {...stepProps} />}
+      {currentStep.id === 'quantity' && <EnquiryStepQuantity {...stepProps} product={product} />}
+      {currentStep.id === 'reference' && (
+        <EnquiryStepReference
+          {...stepProps}
+          referenceFile={referenceFile}
+          setReferenceFile={setReferenceFile}
+          previewUrl={previewUrl}
+        />
+      )}
+      {currentStep.id === 'date' && (
+        <EnquiryStepDate {...stepProps} minimumPreorderDays={minimumPreorderDays} />
+      )}
+      {currentStep.id === 'fulfillment' && <EnquiryStepFulfillment {...stepProps} />}
+      {currentStep.id === 'contact' && <EnquiryStepContact {...stepProps} />}
+      {currentStep.id === 'review' && <EnquiryStepReview draft={draft} previewUrl={previewUrl} />}
 
-        {stepError ? <p className="form-error">{stepError}</p> : null}
-        {submitError ? <p className="form-error">{submitError}</p> : null}
+      {stepError ? <p className="form-error">{stepError}</p> : null}
+      {submitError ? <p className="form-error">{submitError}</p> : null}
 
-        <div className="enquiry-actions">
-          {stepIndex > 0 ? (
-            <button type="button" className="btn btn-secondary" onClick={goBack} disabled={submitting}>
-              Back
-            </button>
-          ) : (
-            <Link className="btn btn-secondary" to={productId ? `/products/${productId}` : '/menu'}>
-              Cancel
-            </Link>
-          )}
-
-          {stepIndex < steps.length - 1 ? (
-            <button type="button" className="btn btn-primary" onClick={goNext}>
-              Continue
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleSubmit}
-              disabled={submitting}
-            >
-              {submitting ? 'Submitting…' : 'Submit Enquiry'}
-            </button>
-          )}
-        </div>
+      <div className="admin-sticky-actions">
+        {stepIndex < steps.length - 1 ? (
+          <button type="button" className="btn btn-primary" onClick={goNext}>
+            Continue
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? 'Sending…' : 'Send on WhatsApp'}
+          </button>
+        )}
       </div>
     </section>
   )

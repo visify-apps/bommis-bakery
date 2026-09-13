@@ -1,59 +1,41 @@
-import {
-  createEmptyEnquiryDraft,
-  ENQUIRY_STEPS,
-  inferRequestTypeFromProduct,
-} from './enquiryOptions'
+import { createEmptyEnquiryDraft, inferRequestTypeFromProduct } from './enquiryOptions'
+import { getFlowMode } from '../utils/enquiryRules'
 
-/**
- * Build step list for general custom enquiry vs product-specific enquiry.
- */
+const CAKE_STEPS = [
+  { id: 'occasion', title: 'What’s the occasion?', short: 'Occasion' },
+  { id: 'requirements', title: 'Tell us the cake', short: 'Cake' },
+  { id: 'reference', title: 'A photo helps', short: 'Photo' },
+  { id: 'date', title: 'When do you need it?', short: 'Date' },
+  { id: 'fulfillment', title: 'Pickup or delivery?', short: 'Handover' },
+  { id: 'contact', title: 'How can we reach you?', short: 'You' },
+  { id: 'review', title: 'Looks right?', short: 'Check' },
+]
+
+const PIECE_STEPS = [
+  { id: 'quantity', title: 'How many?', short: 'Qty' },
+  { id: 'date', title: 'When do you need it?', short: 'Date' },
+  { id: 'fulfillment', title: 'Pickup or delivery?', short: 'Handover' },
+  { id: 'contact', title: 'How can we reach you?', short: 'You' },
+  { id: 'review', title: 'Looks right?', short: 'Check' },
+]
+
+const CUSTOM_STEPS = [
+  { id: 'need', title: 'What would you like?', short: 'Need' },
+  ...CAKE_STEPS,
+]
+
 export function getEnquiryFlow(product) {
-  if (!product) {
-    return {
-      mode: 'custom',
-      steps: ENQUIRY_STEPS,
-      title: 'Cake enquiry',
-      subtitle:
-        'Tell us what you need. The bakery will review and continue with you on WhatsApp — no account required.',
-    }
+  const mode = getFlowMode(product)
+  if (mode === 'unavailable') {
+    return { mode, steps: [], title: 'Unavailable' }
   }
-
-  const isCustom =
-    product.requiresCustomEnquiry ||
-    product.priceType === 'enquiry' ||
-    product.categoryId === 'custom-cakes'
-
-  if (isCustom) {
-    return {
-      mode: 'product-custom',
-      steps: [
-        { id: 'product', title: 'Your cake', short: 'Product' },
-        { id: 'occasion', title: 'Occasion', short: 'Occasion' },
-        { id: 'requirements', title: 'Details', short: 'Details' },
-        { id: 'reference', title: 'Reference', short: 'Reference' },
-        { id: 'date', title: 'Date', short: 'Date' },
-        { id: 'fulfillment', title: 'Pickup / delivery', short: 'Fulfillment' },
-        { id: 'contact', title: 'Your details', short: 'Contact' },
-        { id: 'review', title: 'Review', short: 'Review' },
-      ],
-      title: `Enquire: ${product.name}`,
-      subtitle: 'Share your details for this cake. You’ll get a quote on WhatsApp.',
-    }
+  if (mode === 'piece') {
+    return { mode, steps: PIECE_STEPS, title: product.name }
   }
-
-  return {
-    mode: 'product-simple',
-    steps: [
-      { id: 'product', title: 'Your order', short: 'Product' },
-      { id: 'quantity', title: 'Quantity & notes', short: 'Quantity' },
-      { id: 'date', title: 'Date', short: 'Date' },
-      { id: 'fulfillment', title: 'Pickup / delivery', short: 'Fulfillment' },
-      { id: 'contact', title: 'Your details', short: 'Contact' },
-      { id: 'review', title: 'Review', short: 'Review' },
-    ],
-    title: `Enquire: ${product.name}`,
-    subtitle: 'Quick enquiry for this item. The bakery will confirm on WhatsApp.',
+  if (mode === 'cake') {
+    return { mode, steps: CAKE_STEPS, title: product.name }
   }
+  return { mode: 'custom', steps: CUSTOM_STEPS, title: 'Your cake' }
 }
 
 export function buildDraftFromProduct(product, existing = createEmptyEnquiryDraft()) {
@@ -61,39 +43,12 @@ export function buildDraftFromProduct(product, existing = createEmptyEnquiryDraf
   const servings =
     existing.servings ||
     (product.minimumQuantity ? String(product.minimumQuantity) : existing.servings)
-  const next = {
+  return {
     ...existing,
     productId: product.id,
     productName: product.name,
     requestType: inferRequestTypeFromProduct(product),
     flavour: existing.flavour || product.name,
     servings,
-  }
-  return next
-}
-
-export function mapStepIdToLegacyIndex(stepId) {
-  switch (stepId) {
-    case 'need':
-      return 0
-    case 'product':
-      return -1
-    case 'occasion':
-      return 1
-    case 'requirements':
-    case 'quantity':
-      return 2
-    case 'reference':
-      return 3
-    case 'date':
-      return 4
-    case 'fulfillment':
-      return 5
-    case 'contact':
-      return 6
-    case 'review':
-      return 7
-    default:
-      return 0
   }
 }

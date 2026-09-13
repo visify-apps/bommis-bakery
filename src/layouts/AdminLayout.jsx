@@ -1,28 +1,42 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import {
+  House,
+  BriefcaseBusiness,
+  UtensilsCrossed,
+  IndianRupee,
+  Users,
+  Settings,
+  MoreHorizontal,
+} from 'lucide-react'
+
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 
 const links = [
-  { to: '/admin', end: true, label: 'Today' },
-  { to: '/admin/enquiries', label: 'Jobs' },
-  { to: '/admin/products', label: 'Menu' },
-  { to: '/admin/orders', label: 'Orders' },
-  { to: '/admin/customers', label: 'Customers' },
-  { to: '/admin/settings', label: 'Settings' },
+  { to: '/admin', end: true, label: 'Home', icon: House },
+  { to: '/admin/enquiries', label: 'Jobs', icon: BriefcaseBusiness },
+  { to: '/admin/products', label: 'Menu', icon: UtensilsCrossed },
+  { to: '/admin/money', label: 'Money', icon: IndianRupee },
+  { to: '/admin/customers', label: 'Customers', icon: Users },
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
 const mobileTabs = [
-  { to: '/admin', end: true, label: 'Today' },
-  { to: '/admin/enquiries', label: 'Jobs' },
-  { to: '/admin/products', label: 'Menu' },
-  { to: '/admin/more', label: 'More' },
+  { to: '/admin', end: true, label: 'Home', icon: House },
+  { to: '/admin/enquiries', label: 'Jobs', icon: BriefcaseBusiness },
+  { to: '/admin/products', label: 'Menu', icon: UtensilsCrossed },
+  { to: '/admin/more', label: 'More', icon: MoreHorizontal },
 ]
 
 export function AdminLayout() {
   const { business } = useBusiness()
   const { logout, user } = useAuth()
   const location = useLocation()
-  const onDetail = location.pathname.includes('/enquiries/')
+  const onDetail =
+    /\/enquiries\/[^/]+/.test(location.pathname) ||
+    /\/products\/[^/]+/.test(location.pathname) ||
+    /\/customers\/[^/]+/.test(location.pathname) ||
+    /\/settings$/.test(location.pathname)
 
   return (
     <div className={`admin-shell${onDetail ? ' admin-shell--detail' : ''}`}>
@@ -31,16 +45,28 @@ export function AdminLayout() {
           <strong>{business.displayName || 'Bakery'}</strong>
           <span>Admin</span>
         </div>
+
         <nav className="admin-rail__nav">
-          {links.map((link) => (
-            <NavLink key={link.to} to={link.to} end={link.end}>
-              {link.label}
-            </NavLink>
-          ))}
+          {links.map((link) => {
+            const Icon = link.icon
+
+            return (
+              <NavLink key={link.to} to={link.to} end={link.end}>
+                <Icon className="admin-nav-icon" size={18} strokeWidth={2} aria-hidden="true" />
+                <span>{link.label}</span>
+              </NavLink>
+            )
+          })}
         </nav>
+
         <div className="admin-rail__foot">
           <p className="muted">{user?.email}</p>
-          <button type="button" className="btn btn-ghost" onClick={() => logout()}>
+
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => logout()}
+          >
             Sign out
           </button>
         </div>
@@ -52,7 +78,12 @@ export function AdminLayout() {
             <strong>{business.displayName || 'Bakery'}</strong>
             <span className="admin-topbar__sub">Manage orders</span>
           </div>
-          <button type="button" className="btn btn-ghost admin-signout" onClick={() => logout()}>
+
+          <button
+            type="button"
+            className="btn btn-ghost admin-signout"
+            onClick={() => logout()}
+          >
             Sign out
           </button>
         </header>
@@ -64,11 +95,21 @@ export function AdminLayout() {
 
       {!onDetail ? (
         <nav className="admin-tabbar" aria-label="Admin mobile">
-          {mobileTabs.map((tab) => (
-            <NavLink key={tab.to} to={tab.to} end={tab.end} className="admin-tab">
-              <span>{tab.label}</span>
-            </NavLink>
-          ))}
+          {mobileTabs.map((tab) => {
+            const Icon = tab.icon
+
+            return (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.end}
+                className="admin-tab"
+              >
+                <Icon className="admin-nav-icon" size={20} strokeWidth={2} aria-hidden="true" />
+                <span>{tab.label}</span>
+              </NavLink>
+            )
+          })}
         </nav>
       ) : null}
     </div>

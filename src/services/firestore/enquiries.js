@@ -9,7 +9,9 @@ import {
   toWhatsAppPhone,
 } from '../../utils/enquiry'
 import { uploadEnquiryReferenceImage } from '../storage'
+import { appendDemoEnquiry } from './adminEnquiries'
 import { normalizePhoneDigits } from '../../utils/validation'
+import { openEnquiryOnWhatsApp } from '../whatsapp'
 
 const SUCCESS_STORAGE_KEY = 'ck_last_enquiry_success'
 
@@ -90,7 +92,7 @@ export function buildEnquiryDocument({
         ? {
             address: draft.deliveryAddress.address.trim(),
             area: draft.deliveryAddress.area.trim(),
-            pincode: draft.deliveryAddress.pincode.trim(),
+            pincode: String(draft.deliveryAddress.pincode || '').replace(/\D/g, ''),
             notes: draft.deliveryAddress.notes?.trim() || null,
           }
         : null,
@@ -113,9 +115,10 @@ export function buildEnquiryDocument({
 
 /**
  * Submit enquiry: upload image (optional) → write Firestore (or demo mode).
- * @returns {Promise<{ enquiryId: string, enquiryNumber: string, demo: boolean, enquiry: object }>}
+ * Always continues on WhatsApp after a successful save (custom, cake, or piece).
+ * @returns {Promise<{ enquiryId: string, enquiryNumber: string, demo: boolean, enquiry: object, whatsappUrl: string|null }>}
  */
-export async function submitEnquiry({ draft, referenceFile, submissionToken, businessId }) {
+export async function submitEnquiry({ draft, referenceFile, submissionToken, businessId, business }) {
   const resolvedBusinessId = businessId || appConfig.defaultBusinessId
   const enquiryId = createEnquiryId()
   const enquiryNumber = buildEnquiryNumber(enquiryId)
@@ -139,6 +142,10 @@ export async function submitEnquiry({ draft, referenceFile, submissionToken, bus
   })
 
   const demo = !isFirebaseConfigured()
+  const savedEnquiry = {
+    ...enquiryBody,
+    id: enquiryId,
+  }
 
   if (!demo) {
     const db = getFirestoreDb()
@@ -148,18 +155,23 @@ export async function submitEnquiry({ draft, referenceFile, submissionToken, bus
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+  } else {
+    appendDemoEnquiry(savedEnquiry)
   }
 
   const result = {
     enquiryId,
     enquiryNumber,
     demo,
-    enquiry: {
-      ...enquiryBody,
-      id: enquiryId,
-    },
+    enquiry: savedEnquiry,
   }
 
   saveEnquirySuccessPayload(result)
-  return result
+  const whatsappUrl = openEnquiryOnWhatsApp(result.enquiry, {
+    displayName: business?.displayName,
+    whatsappGreetingName: business?.whatsappGreetingName || 'Keerthana',
+    whatsappNumber: business?.whatsappNumber,
+    phone: business?.phone,
+  })
+  return { ...result, whatsappUrl }
 }

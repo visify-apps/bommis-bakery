@@ -9,14 +9,15 @@ import { MenuPage } from './pages/public/MenuPage'
 import { CakesPage } from './pages/public/CakesPage'
 import { CustomCakePage } from './pages/public/CustomCakePage'
 import { ProductDetailPage } from './pages/public/ProductDetailPage'
-import { EnquirySuccessPage } from './pages/public/EnquirySuccessPage'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminEnquiriesPage } from './pages/admin/AdminEnquiriesPage'
 import { AdminEnquiryDetailPage } from './pages/admin/AdminEnquiryDetailPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
+import { AdminProductEditPage } from './pages/admin/AdminProductEditPage'
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage'
-import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
+import { AdminCustomerDetailPage } from './pages/admin/AdminCustomerDetailPage'
+import { AdminMoneyPage } from './pages/admin/AdminMoneyPage'
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage'
 import { AdminMorePage } from './pages/admin/AdminMorePage'
 
@@ -32,7 +33,7 @@ export default function App() {
               <Route path="cakes" element={<CakesPage />} />
               <Route path="custom-cake" element={<CustomCakePage />} />
               <Route path="products/:productId" element={<ProductDetailPage />} />
-              <Route path="enquiry/success" element={<EnquirySuccessPage />} />
+              <Route path="enquiry/success" element={<Navigate to="/" replace />} />
             </Route>
 
             <Route path="admin/login" element={<AdminLoginPage />} />
@@ -49,8 +50,12 @@ export default function App() {
               <Route path="enquiries" element={<AdminEnquiriesPage />} />
               <Route path="enquiries/:id" element={<AdminEnquiryDetailPage />} />
               <Route path="products" element={<AdminProductsPage />} />
+              <Route path="products/new" element={<AdminProductEditPage />} />
+              <Route path="products/:productId" element={<AdminProductEditPage />} />
               <Route path="customers" element={<AdminCustomersPage />} />
-              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="customers/:customerId" element={<AdminCustomerDetailPage />} />
+              <Route path="money" element={<AdminMoneyPage />} />
+              <Route path="orders" element={<Navigate to="/admin/money" replace />} />
               <Route path="settings" element={<AdminSettingsPage />} />
               <Route path="more" element={<AdminMorePage />} />
             </Route>

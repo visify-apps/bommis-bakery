@@ -1,12 +1,13 @@
 /**
- * Auto-pricing for catalogue items with a known unit price.
+ * Auto-pricing only for fixed unit items (brownies, etc.).
+ * "From ₹" cakes are a starting hint — never multiply by quantity.
  */
 
 export function canAutoPrice(product) {
-  if (!product) return false
-  if (product.priceType === 'enquiry' || product.requiresCustomEnquiry) return false
+  if (!product || product.requiresCustomEnquiry) return false
+  if (product.priceType !== 'fixed') return false
   const price = Number(product.basePrice)
-  return (product.priceType === 'fixed' || product.priceType === 'starting_from') && price > 0
+  return price > 0
 }
 
 export function lineTotal(unitPrice, quantity) {

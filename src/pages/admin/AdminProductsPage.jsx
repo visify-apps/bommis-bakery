@@ -1,289 +1,195 @@
-import { useEffect, useState } from 'react'
-import {
-  listAdminProducts,
-  saveProduct,
-  setProductAvailability,
-} from '../../services/firestore/adminProducts'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
+import { listAdminProducts, setProductAvailability } from '../../services/firestore/adminProducts'
 import { seedCategories } from '../../data/seedCatalogue'
-import { PRICE_TYPES } from '../../types/enums'
 import { formatProductPrice } from '../../utils/pricing'
-import { compressImageFile } from '../../utils/imageCompress'
 
-const emptyForm = {
-  id: '',
-  name: '',
-  categoryId: 'fresh-cream',
-  description: '',
-  basePrice: '',
-  priceType: 'starting_from',
-  minimumQuantity: '',
-  available: true,
-  requiresCustomEnquiry: false,
-  displayOrder: 99,
-  imageUrls: [],
+function categoryName(id) {
+  return seedCategories.find((c) => c.id === id)?.name || 'Other'
+}
+
+function MenuRow({ product, onToggle }) {
+  const on = product.available !== false
+  const sub = !on ? 'Hidden' : product.minimumQuantity ? `Min ${product.minimumQuantity}` : ''
+  return (
+    <article className={`menu-row${on ? '' : ' menu-row--off'}`}>
+      <Link to={`/admin/products/${product.id}`} className="menu-row__main">
+        <div className="menu-row__thumb">
+          {product.imageUrls?.[0] ? (
+            <img src={product.imageUrls[0]} alt="" />
+          ) : (
+            <span>{product.name?.charAt(0)}</span>
+          )}
+        </div>
+        <div className="menu-row__copy">
+          <strong>{product.name}</strong>
+          {sub ? <p>{sub}</p> : null}
+        </div>
+        <span className="menu-row__price">{formatProductPrice(product)}</span>
+      </Link>
+      <button
+        type="button"
+        className="menu-row__vis"
+        onClick={() => onToggle(product)}
+        aria-label={on ? 'Hide from menu' : 'Show on menu'}
+      >
+        {on ? (
+          <Eye size={18} strokeWidth={2} aria-hidden="true" />
+        ) : (
+          <EyeOff size={18} strokeWidth={2} aria-hidden="true" />
+        )}
+      </button>
+    </article>
+  )
 }
 
 export function AdminProductsPage() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState(emptyForm)
-  const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
-  const [editingId, setEditingId] = useState(null)
-  const [showForm, setShowForm] = useState(false)
-
-  async function refresh() {
-    setProducts(await listAdminProducts())
-  }
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('')
 
   useEffect(() => {
-    refresh().finally(() => setLoading(false))
+    let cancelled = false
+    listAdminProducts()
+      .then((items) => {
+        if (!cancelled) setProducts(items)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  function startEdit(product) {
-    setEditingId(product.id)
-    setShowForm(true)
-    setForm({
-      id: product.id,
-      name: product.name || '',
-      categoryId: product.categoryId || 'fresh-cream',
-      description: product.description || '',
-      basePrice: product.basePrice ?? '',
-      priceType: product.priceType || 'enquiry',
-      minimumQuantity: product.minimumQuantity ?? '',
-      available: product.available !== false,
-      requiresCustomEnquiry: Boolean(product.requiresCustomEnquiry),
-      displayOrder: product.displayOrder ?? 0,
-      imageUrls: product.imageUrls || [],
+  const hiddenCount = products.filter((p) => p.available === false).length
+  const onCount = products.length - hiddenCount
+
+  const categories = useMemo(() => {
+    const used = new Set(products.map((p) => p.categoryId))
+    return seedCategories.filter((c) => used.has(c.id))
+  }, [products])
+
+  const groups = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const matched = products.filter((p) => {
+      if (filter === 'hidden' && p.available !== false) return false
+      if (filter && filter !== 'hidden' && p.categoryId !== filter) return false
+      if (!q) return true
+      return [p.name, categoryName(p.categoryId), formatProductPrice(p)]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
     })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
 
-  function startCreate() {
-    setEditingId(null)
-    setForm(emptyForm)
-    setShowForm(true)
-    setError('')
-  }
-
-  function resetForm() {
-    setEditingId(null)
-    setForm(emptyForm)
-    setError('')
-    setShowForm(false)
-  }
-
-  async function handleImagePick(event) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    setUploading(true)
-    setError('')
-    try {
-      const dataUrl = await compressImageFile(file)
-      setForm((f) => ({
-        ...f,
-        imageUrls: [dataUrl, ...(f.imageUrls || []).slice(0, 2)],
-      }))
-    } catch (err) {
-      setError(err?.message || 'Could not process image.')
-    } finally {
-      setUploading(false)
+    if (filter && filter !== 'hidden') {
+      return matched.length ? [{ id: filter, name: categoryName(filter), items: matched }] : []
     }
-  }
 
-  function removeImage(index) {
-    setForm((f) => ({
-      ...f,
-      imageUrls: (f.imageUrls || []).filter((_, i) => i !== index),
-    }))
-  }
+    const byCat = new Map()
+    for (const product of matched) {
+      const id = product.categoryId || 'other'
+      if (!byCat.has(id)) {
+        byCat.set(id, { id, name: categoryName(id), items: [] })
+      }
+      byCat.get(id).items.push(product)
+    }
 
-  async function handleSave(event) {
-    event.preventDefault()
-    if (!form.name.trim()) {
-      setError('Name is required.')
-      return
-    }
-    setSaving(true)
-    setError('')
-    try {
-      await saveProduct(form)
-      await refresh()
-      resetForm()
-    } catch (err) {
-      setError(err?.message || 'Could not save product.')
-    } finally {
-      setSaving(false)
-    }
-  }
+    const ordered = seedCategories
+      .map((c) => byCat.get(c.id))
+      .filter(Boolean)
+    const extra = [...byCat.values()].filter((g) => !seedCategories.some((c) => c.id === g.id))
+    return [...ordered, ...extra]
+  }, [products, search, filter])
 
   async function toggleAvailable(product) {
-    await setProductAvailability(product.id, !product.available)
-    await refresh()
+    const next = product.available === false
+    setProducts((items) => items.map((p) => (p.id === product.id ? { ...p, available: next } : p)))
+    try {
+      await setProductAvailability(product.id, next)
+    } catch {
+      const items = await listAdminProducts()
+      setProducts(items)
+    }
   }
 
   return (
-    <section className="page">
-      <header className="admin-page-header">
+    <section className="page admin-page admin-menu">
+      <header className="menu-head">
         <div>
           <h1>Menu</h1>
-          <p className="lede">Add photos and edit items customers see.</p>
+          <p>
+            {onCount} on
+            {hiddenCount ? ` · ${hiddenCount} hidden` : ''}
+          </p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={startCreate}>
-          Add item
-        </button>
+        <Link className="btn btn-primary btn-small" to="/admin/products/new">
+          Add
+        </Link>
       </header>
 
-      {showForm ? (
-        <form className="admin-panel stack-form" onSubmit={handleSave}>
-          <h2>{editingId ? 'Edit item' : 'New item'}</h2>
+      <div className="jobs-toolbar">
+        <input
+          className="admin-search"
+          type="search"
+          placeholder="Search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
-          <div className="product-image-editor">
-            <div className="product-image-editor__grid">
-              {(form.imageUrls || []).map((url, index) => (
-                <div key={index} className="product-image-thumb">
-                  <img src={url} alt="" />
-                  <button type="button" onClick={() => removeImage(index)}>
-                    Remove
-                  </button>
-                </div>
-              ))}
-              {(form.imageUrls || []).length < 3 ? (
-                <label className="product-image-add">
-                  <span>{uploading ? 'Processing…' : '+ Photo'}</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    hidden
-                    disabled={uploading}
-                    onChange={handleImagePick}
-                  />
-                </label>
-              ) : null}
-            </div>
-            <p className="muted">Photos are compressed and saved with the product (no paid Storage).</p>
-          </div>
-
-          <label>
-            Name
-            <input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              required
-            />
-          </label>
-          <label>
-            Category
-            <select
-              value={form.categoryId}
-              onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
-            >
-              {seedCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Description
-            <textarea
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            />
-          </label>
-          <label>
-            Price type
-            <select
-              value={form.priceType}
-              onChange={(e) => setForm((f) => ({ ...f, priceType: e.target.value }))}
-            >
-              {PRICE_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Base price (₹)
-            <input
-              inputMode="decimal"
-              value={form.basePrice}
-              onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
-            />
-          </label>
-          <label>
-            Minimum quantity
-            <input
-              inputMode="numeric"
-              value={form.minimumQuantity}
-              onChange={(e) => setForm((f) => ({ ...f, minimumQuantity: e.target.value }))}
-            />
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={form.requiresCustomEnquiry}
-              onChange={(e) => setForm((f) => ({ ...f, requiresCustomEnquiry: e.target.checked }))}
-            />
-            Needs custom cake details
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={form.available}
-              onChange={(e) => setForm((f) => ({ ...f, available: e.target.checked }))}
-            />
-            Show on menu
-          </label>
-          {error ? <p className="form-error">{error}</p> : null}
-          <div className="cta-row">
-            <button className="btn btn-primary" type="submit" disabled={saving || uploading}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button className="btn btn-secondary" type="button" onClick={resetForm}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : null}
+      <div className="menu-cats" role="tablist" aria-label="Category">
+        <button
+          type="button"
+          className={`quick-filter${!filter ? ' is-active' : ''}`}
+          onClick={() => setFilter('')}
+        >
+          All
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className={`quick-filter${filter === c.id ? ' is-active' : ''}`}
+            onClick={() => setFilter(c.id)}
+          >
+            {c.name}
+          </button>
+        ))}
+        {hiddenCount ? (
+          <button
+            type="button"
+            className={`quick-filter${filter === 'hidden' ? ' is-active' : ''}`}
+            onClick={() => setFilter('hidden')}
+          >
+            Hidden
+          </button>
+        ) : null}
+      </div>
 
       {loading ? <p className="muted">Loading…</p> : null}
+      {!loading && !groups.length ? <p className="muted">Nothing here.</p> : null}
 
-      <div className="menu-admin-grid">
-        {products.map((product) => (
-          <article key={product.id} className="menu-admin-card">
-            <div className="menu-admin-card__media">
-              {product.imageUrls?.[0] ? (
-                <img src={product.imageUrls[0]} alt="" />
-              ) : (
-                <div className="product-card__placeholder">
-                  <span>{product.name?.charAt(0)}</span>
-                </div>
-              )}
+      {groups.map((group) => (
+        <section key={group.id} className="home-block">
+          {!filter || filter === 'hidden' ? (
+            <div className="home-block__head">
+              <h2>
+                {group.name}
+                <em>{group.items.length}</em>
+              </h2>
             </div>
-            <div className="menu-admin-card__body">
-              <strong>{product.name}</strong>
-              <p className="muted">
-                {formatProductPrice(product)}
-                {!product.available ? ' · Hidden' : ''}
-              </p>
-              <div className="job-card__actions">
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => startEdit(product)}>
-                  Edit
-                </button>
-                <button type="button" className="btn btn-ghost btn-small" onClick={() => toggleAvailable(product)}>
-                  {product.available ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
+          ) : null}
+          <div className="home-stack">
+            {group.items.map((product) => (
+              <MenuRow key={product.id} product={product} onToggle={toggleAvailable} />
+            ))}
+          </div>
+        </section>
+      ))}
     </section>
   )
 }

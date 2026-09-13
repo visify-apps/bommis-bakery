@@ -5,12 +5,15 @@ import {
   getDocs,
   orderBy,
   query,
+  deleteField,
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
 import { appConfig, isFirebaseConfigured } from '../../config/appConfig'
 import { getFirestoreDb } from '../firebase'
 import { demoEnquiries } from '../../data/demoEnquiries'
+import { deliveryDateKey, localDateKey, shiftDateKey, sortByDeliveryDate } from '../../utils/jobDate'
+import { toSimpleStatus } from '../../utils/simpleStatus'
 
 const DEMO_STORE_KEY = 'ck_admin_demo_enquiries_v1'
 
@@ -38,6 +41,22 @@ function writeDemoStore(items) {
   } catch {
     // ignore
   }
+}
+
+/** Keep a locally submitted enquiry on the baker’s job list (demo / offline). */
+export function appendDemoEnquiry(enquiry) {
+  if (!enquiry?.id) return
+  const items = readDemoStore()
+  if (items.some((item) => item.id === enquiry.id)) return
+  const now = new Date().toISOString()
+  writeDemoStore([
+    {
+      ...enquiry,
+      createdAt: enquiry.createdAt || now,
+      updatedAt: enquiry.updatedAt || now,
+    },
+    ...items,
+  ])
 }
 
 function normalizeEnquiry(id, data) {
@@ -105,6 +124,9 @@ export async function updateEnquiry(enquiryId, patch, businessId = appConfig.def
       ...patch,
       updatedAt: new Date().toISOString(),
     }
+    for (const key of Object.keys(patch)) {
+      if (patch[key] === null) delete next[key]
+    }
     items[idx] = next
     writeDemoStore(items)
     return next
@@ -112,8 +134,12 @@ export async function updateEnquiry(enquiryId, patch, businessId = appConfig.def
 
   const db = getFirestoreDb()
   const ref = doc(db, 'businesses', businessId, 'enquiries', enquiryId)
+  const firestorePatch = {}
+  for (const [key, value] of Object.entries(patch)) {
+    firestorePatch[key] = value === null ? deleteField() : value
+  }
   await updateDoc(ref, {
-    ...patch,
+    ...firestorePatch,
     updatedAt: serverTimestamp(),
   })
   return getEnquiry(enquiryId, businessId)
@@ -129,30 +155,29 @@ export function computeBalance(quotedPrice, advanceRequired) {
  * Dashboard counters from enquiry list.
  */
 export function summarizeEnquiries(enquiries = []) {
-  const today = new Date().toISOString().slice(0, 10)
-  const newCount = enquiries.filter((e) => e.status === 'NEW').length
-  const pendingQuotes = enquiries.filter((e) =>
-    ['NEW', 'REVIEWING'].includes(e.status),
-  ).length
-  const pendingConfirmations = enquiries.filter((e) =>
-    ['QUOTE_SENT', 'CUSTOMER_CONFIRMED', 'ADVANCE_PENDING'].includes(e.status),
-  ).length
-  const upcoming = enquiries.filter((e) => {
-    if (!e.preferredDate) return false
-    if (['CANCELLED', 'REJECTED', 'COMPLETED'].includes(e.status)) return false
-    return e.preferredDate >= today
-  })
+  const today = localDateKey()
+  const weekEnd = shiftDateKey(today, 6)
+  const newCount = enquiries.filter((e) => toSimpleStatus(e.status) === 'NEW').length
+  const waitingCount = enquiries.filter((e) => toSimpleStatus(e.status) === 'QUOTED').length
+  const upcoming = sortByDeliveryDate(
+    enquiries.filter((e) => {
+      const simple = toSimpleStatus(e.status)
+      if (simple === 'HANDED_OVER' || simple === 'CANCELLED') return false
+      const key = deliveryDateKey(e)
+      return key !== '9999-99-99' && key >= today
+    }),
+  )
+  const thisWeek = upcoming.filter((e) => deliveryDateKey(e) <= weekEnd)
   const todayCount = enquiries.filter((e) => String(e.createdAt || '').startsWith(today)).length
 
   return {
     todayCount,
     newCount,
-    pendingQuotes,
-    pendingConfirmations,
+    pendingQuotes: newCount,
+    pendingConfirmations: waitingCount,
+    waitingCount,
+    thisWeekCount: thisWeek.length,
     upcomingOrders: upcoming.length,
-    upcomingDates: upcoming
-      .slice()
-      .sort((a, b) => String(a.preferredDate).localeCompare(String(b.preferredDate)))
-      .slice(0, 5),
+    upcomingDates: upcoming.slice(0, 20),
   }
 }

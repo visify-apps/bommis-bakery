@@ -1,138 +1,141 @@
-import { OptionGrid } from './OptionGrid'
+import { Children } from 'react'
 import {
-  EGG_OPTIONS,
-  FULFILLMENT_TYPES,
-  OCCASIONS,
-  REQUEST_TYPES,
-} from '../../data/enquiryOptions'
+  Egg,
+  Hash,
+  IceCreamCone,
+  MapPin,
+  Package,
+  Palette,
+  PartyPopper,
+  Scaling,
+  Shapes,
+  Sparkles,
+  StickyNote,
+  Truck,
+  Type,
+} from 'lucide-react'
+import { OptionGrid } from './OptionGrid'
+import { FULFILLMENT_TYPES, OCCASIONS, REQUEST_TYPES } from '../../data/enquiryOptions'
 import { formatDisplayDate, getMinPreferredDateISO } from '../../utils/enquiry'
-import { canAutoPrice, lineTotal, suggestedAdvance } from '../../utils/autoPrice'
+import { formatPrice } from '../../utils/pricing'
+import { canAutoPrice, suggestedAdvance } from '../../utils/autoPrice'
+import { CAKE_SIZES, customerPrice, estimateLine, parseQty } from '../../utils/enquiryRules'
+import { VisifyNote } from '../VisifyNote'
 
-function Field({ label, children, hint }) {
+const EGG_REQUIRED = [
+  { value: 'eggless', label: 'Eggless' },
+  { value: 'egg', label: 'With egg' },
+]
+
+function applyQty(product, draft, raw) {
+  const next = { ...draft, servings: raw }
+  const total = estimateLine(product, raw)
+  if (total != null) {
+    const adv = suggestedAdvance(total)
+    next.quotedPrice = total
+    next.advanceRequired = adv
+    next.balanceAmount = total - adv
+    next.autoPriced = true
+    next.priceLocked = true
+  } else {
+    next.quotedPrice = null
+    next.advanceRequired = null
+    next.balanceAmount = null
+    next.autoPriced = false
+    next.priceLocked = false
+  }
+  return next
+}
+
+function Field({ label, required, children }) {
   return (
     <label className="enquiry-field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {required ? <i aria-hidden="true"> *</i> : null}
+      </span>
       {children}
-      {hint ? <small className="muted">{hint}</small> : null}
     </label>
+  )
+}
+
+function Block({ children }) {
+  const items = Children.toArray(children).filter(Boolean)
+  if (!items.length) return null
+  return <div className="job-block">{items}</div>
+}
+
+function Fact({ icon: Icon, label, value }) {
+  if (!value) return null
+  return (
+    <div className="job-fact">
+      <Icon className="job-fact__icon" size={16} strokeWidth={2} aria-hidden="true" />
+      <span className="job-fact__text">
+        <em>{label}</em>
+        <strong>{value}</strong>
+      </span>
+    </div>
   )
 }
 
 export function EnquiryStepNeed({ draft, setDraft }) {
   return (
     <div className="enquiry-step">
-      <h2>What do you need?</h2>
       <OptionGrid
-        name="Request type"
+        name="Need"
         options={REQUEST_TYPES}
         value={draft.requestType}
         onChange={(requestType) => setDraft((d) => ({ ...d, requestType }))}
       />
       {draft.requestType === 'Other' ? (
-        <Field label="Describe what you need">
+        <Field label="Tell us more" required>
           <input
             value={draft.requestTypeOther}
             onChange={(e) => setDraft((d) => ({ ...d, requestTypeOther: e.target.value }))}
-            placeholder="e.g. Cupcakes for a school event"
           />
         </Field>
       ) : null}
-      {draft.productName ? (
-        <p className="muted">Started from product: {draft.productName}</p>
-      ) : null}
-    </div>
-  )
-}
-
-export function EnquiryStepProduct({ product }) {
-  if (!product) {
-    return (
-      <div className="enquiry-step">
-        <h2>Product</h2>
-        <p className="muted">Loading product…</p>
-      </div>
-    )
-  }
-  const image = product.imageUrls?.[0]
-  return (
-    <div className="enquiry-step">
-      <h2>You’re enquiring for</h2>
-      <article className="product-enquiry-hero">
-        <div className="product-enquiry-hero__media">
-          {image ? (
-            <img src={image} alt="" />
-          ) : (
-            <div className="product-card__placeholder" aria-hidden="true">
-              <span>{product.name?.charAt(0)}</span>
-            </div>
-          )}
-        </div>
-        <div>
-          <h3>{product.name}</h3>
-          <p className="muted">{product.description}</p>
-          {product.minimumQuantity ? (
-            <p className="muted">Minimum order: {product.minimumQuantity}</p>
-          ) : null}
-        </div>
-      </article>
-      <p className="muted">Continue to add quantity, date, and your WhatsApp number.</p>
     </div>
   )
 }
 
 export function EnquiryStepQuantity({ draft, setDraft, product }) {
-  const minQty = product?.minimumQuantity || 1
-  const auto = canAutoPrice(product)
-  const total = auto ? lineTotal(product.basePrice, draft.servings) : null
+  const minQty = Number(product?.minimumQuantity) || 1
+  const qty = parseQty(draft.servings)
+  const total = estimateLine(product, draft.servings)
+  const fromHint = !canAutoPrice(product) ? customerPrice(product) : null
 
-  function setQty(value) {
-    setDraft((d) => {
-      const next = { ...d, servings: value }
-      if (canAutoPrice(product)) {
-        const t = lineTotal(product.basePrice, value)
-        if (t != null) {
-          const adv = suggestedAdvance(t)
-          next.quotedPrice = t
-          next.advanceRequired = adv
-          next.balanceAmount = t - adv
-          next.autoPriced = true
-          next.priceLocked = true
-        }
-      }
-      return next
-    })
+  function bump(delta) {
+    const current = Number.isFinite(qty) ? qty : minQty
+    const next = Math.max(minQty, current + delta)
+    setDraft((d) => applyQty(product, d, String(next)))
   }
 
   return (
     <div className="enquiry-step">
-      <h2>How many?</h2>
-      <div className="enquiry-fields">
-        <Field
-          label="Quantity"
-          hint={product?.minimumQuantity ? `Minimum ${product.minimumQuantity}` : null}
-        >
-          <input
-            inputMode="numeric"
-            value={draft.servings}
-            onChange={(e) => setQty(e.target.value)}
-            placeholder={String(minQty)}
-          />
-        </Field>
-        {auto && total != null ? (
-          <p className="price-live">
-            Estimated total: <strong>₹{total}</strong>
-            <span className="muted"> (₹{product.basePrice} × {draft.servings || 0})</span>
-          </p>
-        ) : null}
-        <Field label="Notes (optional)">
-          <textarea
-            rows={2}
-            value={draft.otherRequirements}
-            onChange={(e) => setDraft((d) => ({ ...d, otherRequirements: e.target.value }))}
-            placeholder="Packaging, message, allergies…"
-          />
-        </Field>
+      <div className="qty-stepper">
+        <button type="button" onClick={() => bump(-1)} aria-label="Less">
+          −
+        </button>
+        <input
+          inputMode="numeric"
+          value={draft.servings}
+          onChange={(e) => setDraft((d) => applyQty(product, d, e.target.value.replace(/[^\d]/g, '')))}
+        />
+        <button type="button" onClick={() => bump(1)} aria-label="More">
+          +
+        </button>
       </div>
+      <p className="enquiry-hint">Minimum {minQty}</p>
+      {total != null ? <p className="price-live">{formatPrice(total)}</p> : null}
+      {fromHint && fromHint.kind === 'from' ? <p className="enquiry-hint">{fromHint.label} each</p> : null}
+      <Field label="Note">
+        <textarea
+          rows={2}
+          value={draft.otherRequirements}
+          onChange={(e) => setDraft((d) => ({ ...d, otherRequirements: e.target.value }))}
+        />
+      </Field>
     </div>
   )
 }
@@ -140,7 +143,6 @@ export function EnquiryStepQuantity({ draft, setDraft, product }) {
 export function EnquiryStepOccasion({ draft, setDraft }) {
   return (
     <div className="enquiry-step">
-      <h2>What’s the occasion?</h2>
       <OptionGrid
         name="Occasion"
         options={OCCASIONS}
@@ -148,7 +150,7 @@ export function EnquiryStepOccasion({ draft, setDraft }) {
         onChange={(occasion) => setDraft((d) => ({ ...d, occasion }))}
       />
       {draft.occasion === 'Other' ? (
-        <Field label="Describe the occasion">
+        <Field label="Tell us the occasion" required>
           <input
             value={draft.occasionOther}
             onChange={(e) => setDraft((d) => ({ ...d, occasionOther: e.target.value }))}
@@ -161,50 +163,70 @@ export function EnquiryStepOccasion({ draft, setDraft }) {
 
 export function EnquiryStepRequirements({ draft, setDraft }) {
   const set = (key) => (e) => setDraft((d) => ({ ...d, [key]: e.target.value }))
+  const listed = CAKE_SIZES.includes(draft.cakeSize)
+  const otherOn = Boolean(draft.sizeOther) || Boolean(draft.cakeSize && !listed)
+
   return (
     <div className="enquiry-step">
-      <h2>Cake requirements</h2>
-      <p className="muted">Only fill what you know — nothing here is required.</p>
+      <div className="enquiry-field">
+        <span>
+          Size <i aria-hidden="true">*</i>
+        </span>
+        <OptionGrid
+          name="Size"
+          options={[...CAKE_SIZES, 'Other']}
+          value={listed ? draft.cakeSize : otherOn ? 'Other' : ''}
+          onChange={(cakeSize) =>
+            setDraft((d) => ({
+              ...d,
+              sizeOther: cakeSize === 'Other',
+              cakeSize: cakeSize === 'Other' ? '' : cakeSize,
+            }))
+          }
+        />
+        {otherOn ? (
+          <input
+            className="enquiry-other"
+            value={draft.cakeSize}
+            onChange={set('cakeSize')}
+            placeholder="e.g. 3 kg / 8 inch"
+          />
+        ) : null}
+      </div>
+
       <div className="enquiry-fields">
-        <Field label="Cake size">
-          <input value={draft.cakeSize} onChange={set('cakeSize')} placeholder="e.g. 1 kg / 6 inch" />
-        </Field>
-        <Field label="Servings (if known)">
-          <input value={draft.servings} onChange={set('servings')} placeholder="e.g. 10–12" />
-        </Field>
-        <Field label="Flavour">
-          <input value={draft.flavour} onChange={set('flavour')} placeholder="e.g. Chocolate Truffle" />
+        <Field label="Flavour" required>
+          <input value={draft.flavour} onChange={set('flavour')} />
         </Field>
         <div className="enquiry-field">
-          <span>Egg / Eggless</span>
+          <span>
+            Egg <i aria-hidden="true">*</i>
+          </span>
           <OptionGrid
-            name="Egg preference"
-            options={EGG_OPTIONS}
+            name="Egg"
+            options={EGG_REQUIRED}
             value={draft.eggPreference}
             onChange={(eggPreference) => setDraft((d) => ({ ...d, eggPreference }))}
           />
         </div>
-        <Field label="Shape">
-          <input value={draft.shape} onChange={set('shape')} placeholder="Round, heart, square…" />
-        </Field>
         <Field label="Theme">
-          <input value={draft.theme} onChange={set('theme')} placeholder="Barbie, butterfly, floral…" />
+          <input value={draft.theme} onChange={set('theme')} placeholder="Optional" />
         </Field>
-        <Field label="Colour preference">
-          <input value={draft.colourPreference} onChange={set('colourPreference')} />
+        <Field label="On the cake">
+          <input value={draft.messageOnCake} onChange={set('messageOnCake')} placeholder="Optional" />
         </Field>
-        <Field label="Text / name on cake">
-          <input value={draft.messageOnCake} onChange={set('messageOnCake')} />
+        <Field label="Colour or shape">
+          <input
+            value={draft.colourPreference || draft.shape}
+            onChange={(e) => setDraft((d) => ({ ...d, colourPreference: e.target.value }))}
+            placeholder="Optional"
+          />
         </Field>
-        <Field label="Age (if relevant)">
-          <input value={draft.age} onChange={set('age')} />
-        </Field>
-        <Field label="Other requirements">
+        <Field label="Anything else">
           <textarea
-            rows={3}
+            rows={2}
             value={draft.otherRequirements}
             onChange={set('otherRequirements')}
-            placeholder="Allergies, must-have details, inspiration notes…"
           />
         </Field>
       </div>
@@ -215,35 +237,32 @@ export function EnquiryStepRequirements({ draft, setDraft }) {
 export function EnquiryStepReference({ draft, setDraft, referenceFile, setReferenceFile, previewUrl }) {
   return (
     <div className="enquiry-step">
-      <h2>Reference / inspiration</h2>
-      <p className="muted">
-        Optional: pick a reference image (JPG, PNG, or WebP, max 5 MB). You can also send the photo on
-        WhatsApp after submitting — that keeps the site on free Firebase services.
-      </p>
-      <Field label="Reference image (optional)">
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-          onChange={(e) => {
-            const file = e.target.files?.[0] || null
-            setReferenceFile(file)
-          }}
-        />
-      </Field>
-      {previewUrl ? (
-        <div className="reference-preview">
-          <img src={previewUrl} alt="Reference preview" />
-          <button type="button" className="btn btn-ghost" onClick={() => setReferenceFile(null)}>
-            Remove image
-          </button>
-        </div>
-      ) : null}
-      <Field label="Notes about the reference (optional)">
+      <p className="enquiry-hint">Optional — you can also send this on WhatsApp after.</p>
+      <div className="menu-photos">
+        {previewUrl ? (
+          <div className="menu-photo">
+            <img src={previewUrl} alt="" />
+            <button type="button" onClick={() => setReferenceFile(null)} aria-label="Remove">
+              ×
+            </button>
+          </div>
+        ) : (
+          <label className="menu-photo menu-photo--add">
+            <span>+</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(e) => setReferenceFile(e.target.files?.[0] || null)}
+            />
+          </label>
+        )}
+      </div>
+      <Field label="What you like about it">
         <textarea
-          rows={3}
+          rows={2}
           value={draft.referenceNotes}
           onChange={(e) => setDraft((d) => ({ ...d, referenceNotes: e.target.value }))}
-          placeholder="What you like from this image…"
         />
       </Field>
     </div>
@@ -254,11 +273,7 @@ export function EnquiryStepDate({ draft, setDraft, minimumPreorderDays }) {
   const minDate = getMinPreferredDateISO(minimumPreorderDays)
   return (
     <div className="enquiry-step">
-      <h2>Preferred date</h2>
-      <p className="muted">
-        Please place enquiries at least {minimumPreorderDays}–5 days in advance.
-      </p>
-      <Field label="When do you need it?" hint={`Earliest: ${formatDisplayDate(minDate)}`}>
+      <Field label={`Earliest ${formatDisplayDate(minDate)}`} required>
         <input
           type="date"
           min={minDate}
@@ -275,45 +290,46 @@ export function EnquiryStepFulfillment({ draft, setDraft }) {
   const setAddress = (key) => (e) =>
     setDraft((d) => ({
       ...d,
-      deliveryAddress: { ...d.deliveryAddress, [key]: e.target.value },
+      deliveryAddress: {
+        ...d.deliveryAddress,
+        [key]: key === 'pincode' ? e.target.value.replace(/\D/g, '').slice(0, 6) : e.target.value,
+      },
     }))
 
   return (
     <div className="enquiry-step">
-      <h2>Pickup or delivery</h2>
       <OptionGrid
-        name="Fulfillment"
+        name="Handover"
         options={FULFILLMENT_TYPES}
         value={draft.fulfillmentType}
         onChange={(fulfillmentType) => setDraft((d) => ({ ...d, fulfillmentType }))}
       />
       {draft.fulfillmentType === 'delivery' ? (
         <div className="enquiry-fields">
-          <p className="muted">Delivery charges extra. Final delivery fee is confirmed by the baker.</p>
-          <Field label="Address">
+          <p className="enquiry-hint">Delivery charges are confirmed on WhatsApp.</p>
+          <Field label="Address" required>
             <textarea
               rows={2}
               value={draft.deliveryAddress.address}
               onChange={setAddress('address')}
             />
           </Field>
-          <Field label="Area">
-            <input value={draft.deliveryAddress.area} onChange={setAddress('area')} />
-          </Field>
-          <Field label="Pincode">
-            <input
-              inputMode="numeric"
-              value={draft.deliveryAddress.pincode}
-              onChange={setAddress('pincode')}
-              maxLength={6}
-            />
-          </Field>
-          <Field label="Location notes (optional)">
-            <input value={draft.deliveryAddress.notes} onChange={setAddress('notes')} />
-          </Field>
+          <div className="menu-price-row">
+            <Field label="Area" required>
+              <input value={draft.deliveryAddress.area} onChange={setAddress('area')} />
+            </Field>
+            <Field label="Pin" required>
+              <input
+                inputMode="numeric"
+                value={draft.deliveryAddress.pincode}
+                onChange={setAddress('pincode')}
+                maxLength={6}
+              />
+            </Field>
+          </div>
         </div>
       ) : (
-        <p className="muted">Self pickup is available. Exact pickup time will be confirmed on WhatsApp.</p>
+        <p className="enquiry-hint">We’ll confirm the pickup time on WhatsApp.</p>
       )}
     </div>
   )
@@ -322,10 +338,8 @@ export function EnquiryStepFulfillment({ draft, setDraft }) {
 export function EnquiryStepContact({ draft, setDraft }) {
   return (
     <div className="enquiry-step">
-      <h2>Your details</h2>
-      <p className="muted">WhatsApp is how the bakery will continue the conversation — no account needed.</p>
       <div className="enquiry-fields">
-        <Field label="Name">
+        <Field label="Your name" required>
           <input
             value={draft.customerName}
             onChange={(e) => setDraft((d) => ({ ...d, customerName: e.target.value }))}
@@ -333,7 +347,7 @@ export function EnquiryStepContact({ draft, setDraft }) {
             required
           />
         </Field>
-        <Field label="WhatsApp phone" hint="10-digit Indian mobile">
+        <Field label="WhatsApp" required>
           <input
             value={draft.customerPhone}
             onChange={(e) => setDraft((d) => ({ ...d, customerPhone: e.target.value }))}
@@ -342,79 +356,60 @@ export function EnquiryStepContact({ draft, setDraft }) {
             required
           />
         </Field>
-        <Field label="Email (optional)">
-          <input
-            type="email"
-            value={draft.customerEmail}
-            onChange={(e) => setDraft((d) => ({ ...d, customerEmail: e.target.value }))}
-            autoComplete="email"
-          />
-        </Field>
       </div>
     </div>
   )
 }
 
-function ReviewRow({ label, value }) {
-  if (!value) return null
-  return (
-    <div className="review-row">
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  )
-}
+export function EnquiryStepReview({ draft, previewUrl }) {
+  const need = draft.requestType === 'Other' ? draft.requestTypeOther : draft.requestType
+  const occasion = draft.occasion === 'Other' ? draft.occasionOther : draft.occasion
+  const egg = EGG_REQUIRED.find((o) => o.value === draft.eggPreference)?.label || ''
+  const handoff = draft.fulfillmentType === 'delivery' ? 'Delivery' : 'Pickup'
+  const address =
+    draft.fulfillmentType === 'delivery'
+      ? [draft.deliveryAddress.address, draft.deliveryAddress.area, draft.deliveryAddress.pincode]
+          .filter(Boolean)
+          .join(', ')
+      : ''
 
-export function EnquiryStepReview({ draft, previewUrl, minimumPreorderDays }) {
   return (
     <div className="enquiry-step">
-      <h2>Review & submit</h2>
-      <p className="muted">Check everything looks right, then submit your enquiry.</p>
-      <dl className="review-list">
-        <ReviewRow label="Need" value={draft.requestType === 'Other' ? draft.requestTypeOther : draft.requestType} />
-        <ReviewRow label="Occasion" value={draft.occasion === 'Other' ? draft.occasionOther : draft.occasion} />
-        <ReviewRow label="Size" value={draft.cakeSize} />
-        <ReviewRow label="Servings" value={draft.servings} />
-        <ReviewRow label="Flavour" value={draft.flavour} />
-        <ReviewRow
-          label="Egg / Eggless"
-          value={EGG_OPTIONS.find((o) => o.value === draft.eggPreference)?.label || draft.eggPreference}
+      <Block>
+        <Fact icon={Sparkles} label="Need" value={draft.productName || need} />
+        <Fact icon={PartyPopper} label="Occasion" value={occasion} />
+      </Block>
+      <Block>
+        <Fact icon={Scaling} label="Size" value={draft.cakeSize} />
+        <Fact icon={Hash} label="Qty" value={draft.servings} />
+        <Fact icon={IceCreamCone} label="Flavour" value={draft.flavour} />
+        <Fact icon={Egg} label="Egg" value={egg} />
+        <Fact icon={Shapes} label="Shape" value={draft.shape} />
+        <Fact icon={Sparkles} label="Theme" value={draft.theme} />
+        <Fact icon={Palette} label="Colour" value={draft.colourPreference} />
+        <Fact icon={Type} label="On cake" value={draft.messageOnCake} />
+      </Block>
+      <Block>
+        <Fact
+          icon={draft.fulfillmentType === 'delivery' ? Truck : Package}
+          label="Hand over"
+          value={`${handoff}${draft.preferredDate ? ` · ${formatDisplayDate(draft.preferredDate)}` : ''}`}
         />
-        <ReviewRow label="Shape" value={draft.shape} />
-        <ReviewRow label="Theme" value={draft.theme} />
-        <ReviewRow label="Colours" value={draft.colourPreference} />
-        <ReviewRow label="Message on cake" value={draft.messageOnCake} />
-        <ReviewRow label="Age" value={draft.age} />
-        <ReviewRow label="Other" value={draft.otherRequirements} />
-        <ReviewRow label="Reference notes" value={draft.referenceNotes} />
-        <ReviewRow label="Preferred date" value={formatDisplayDate(draft.preferredDate)} />
-        <ReviewRow
-          label="Fulfillment"
-          value={
-            draft.fulfillmentType === 'delivery'
-              ? `Delivery · ${draft.deliveryAddress.area} · ${draft.deliveryAddress.pincode}`
-              : 'Self pickup'
-          }
-        />
-        {draft.fulfillmentType === 'delivery' ? (
-          <ReviewRow label="Address" value={draft.deliveryAddress.address} />
-        ) : null}
-        <ReviewRow label="Name" value={draft.customerName} />
-        <ReviewRow label="WhatsApp" value={draft.customerPhone} />
-        <ReviewRow label="Email" value={draft.customerEmail} />
-        {draft.productName ? <ReviewRow label="Product" value={draft.productName} /> : null}
-        {draft.autoPriced && draft.quotedPrice != null ? (
-          <ReviewRow label="Estimated total" value={`₹${draft.quotedPrice}`} />
-        ) : null}
-      </dl>
-      {previewUrl ? (
-        <div className="reference-preview">
-          <img src={previewUrl} alt="Reference" />
+        <Fact icon={MapPin} label="Address" value={address} />
+        <Fact icon={StickyNote} label="Note" value={draft.otherRequirements || draft.referenceNotes} />
+      </Block>
+      {draft.autoPriced && draft.quotedPrice != null ? (
+        <div className="job-block job-block--money">
+          <div className="price-split">
+            <div>
+              <span>Total</span>
+              <strong>{formatPrice(draft.quotedPrice)}</strong>
+            </div>
+          </div>
         </div>
       ) : null}
-      <p className="muted">
-        Preorder: at least {minimumPreorderDays}–5 days · Delivery charges extra if delivery is selected.
-      </p>
+      {previewUrl ? <img className="job-hero__ref" src={previewUrl} alt="" /> : null}
+      <VisifyNote />
     </div>
   )
 }

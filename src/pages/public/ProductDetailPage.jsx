@@ -1,72 +1,67 @@
 import { Link, useParams } from 'react-router-dom'
-import { useCategories, useProduct } from '../../hooks/useCatalogue'
-import { formatProductPrice } from '../../utils/pricing'
-import { getCategoryName } from '../../services/firestore/catalogue'
-import { useBusiness } from '../../context/BusinessContext'
+import { useProduct } from '../../hooks/useCatalogue'
+import { customerPrice, isPieceItem, isProductOffered } from '../../utils/enquiryRules'
+import { useSmartBack } from '../../hooks/useSmartBack'
 
 export function ProductDetailPage() {
   const { productId } = useParams()
+  const goBack = useSmartBack('/menu')
   const { product, loading } = useProduct(productId)
-  const { categories } = useCategories()
-  const { business } = useBusiness()
 
   if (loading) {
     return (
-      <section className="page">
+      <section className="page shop-page">
         <p className="muted">Loading…</p>
       </section>
     )
   }
 
-  if (!product) {
+  if (!isProductOffered(product)) {
     return (
-      <section className="page">
-        <h1>Not found</h1>
-        <Link className="btn btn-secondary" to="/menu">
-          Menu
-        </Link>
+      <section className="page shop-page">
+        <button type="button" className="back-link" onClick={goBack}>
+          ← Back
+        </button>
+        <p className="muted">This item is not on the menu right now.</p>
       </section>
     )
   }
 
-  const priceLabel = formatProductPrice(product, business.currency || 'INR')
-  const categoryName = getCategoryName(categories, product.categoryId)
-  const images = product.imageUrls || []
+  const price = customerPrice(product)
+  const image = product.imageUrls?.[0]
+  const piece = isPieceItem(product)
 
   return (
-    <section className="page product-detail">
-      <div className="product-detail__grid">
-        <div className="product-detail__media">
-          {images[0] ? (
-            <img src={images[0]} alt={product.name} />
-          ) : (
-            <div className="product-detail__placeholder">{product.name?.charAt(0)}</div>
-          )}
-          {images.length > 1 ? (
-            <div className="product-detail__thumbs">
-              {images.slice(1).map((url, i) => (
-                <img key={i} src={url} alt="" />
-              ))}
-            </div>
-          ) : null}
+    <section className="page shop-page product-detail">
+      <button type="button" className="back-link" onClick={goBack}>
+        ← Back
+      </button>
+
+      <div className="product-stage">
+        <div className="product-stage__media">
+          {image ? <img src={image} alt="" /> : <span>{product.name.charAt(0)}</span>}
         </div>
-        <div>
-          <p className="eyebrow">{categoryName}</p>
+        <div className="product-stage__copy">
+          <em className={`shop-price shop-price--${price.kind}`}>{price.label}</em>
           <h1>{product.name}</h1>
-          <p className="product-detail__price">{priceLabel}</p>
-          {product.minimumQuantity ? (
-            <p className="muted">Min. {product.minimumQuantity} pieces</p>
-          ) : null}
-          <p className="home-line">{product.description}</p>
-          <div className="home-actions">
-            <Link className="btn btn-primary" to={`/custom-cake?product=${product.id}`}>
-              Enquire about this
-            </Link>
-            <Link className="btn btn-text" to="/menu">
-              Back to menu
-            </Link>
-          </div>
+          {product.description ? <p>{product.description}</p> : null}
+          {product.minimumQuantity ? <p className="product-stage__min">Minimum {product.minimumQuantity}</p> : null}
+          <p className="product-stage__hint">
+            {price.kind === 'fixed'
+              ? 'Price is per piece. We’ll confirm the total when you choose quantity.'
+              : price.kind === 'from'
+                ? piece
+                  ? 'Starting price per piece — final total depends on quantity.'
+                  : 'Starting price for a classic finish. Size, theme, and date decide the quote.'
+                : 'We’ll send a quote on WhatsApp after we see your details.'}
+          </p>
         </div>
+      </div>
+
+      <div className="admin-sticky-actions">
+        <Link className="btn btn-primary" to={`/custom-cake?product=${product.id}`}>
+          Enquire about this
+        </Link>
       </div>
     </section>
   )

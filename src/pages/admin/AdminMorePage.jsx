@@ -1,25 +1,31 @@
 import { Link } from 'react-router-dom'
+import { VisifyNote } from '../../components/VisifyNote'
 import { useAuth } from '../../context/AuthContext'
 
 export function AdminMorePage() {
   const { user, logout } = useAuth()
 
   return (
-    <section className="page admin-more">
-      <h1>More</h1>
-      <p className="muted">{user?.email}</p>
+    <section className="page admin-page admin-more">
+      <header className="menu-head">
+        <div>
+          <h1>More</h1>
+          <p>{user?.email}</p>
+        </div>
+      </header>
 
       <div className="admin-more-list">
-        <Link to="/admin/orders">Orders (accepted jobs)</Link>
+        <Link to="/admin/money">Money</Link>
         <Link to="/admin/customers">Customers</Link>
         <Link to="/admin/settings">Settings</Link>
         <a href="#/" target="_blank" rel="noreferrer">
-          Open customer website
+          Website
         </a>
         <button type="button" onClick={() => logout()}>
           Sign out
         </button>
       </div>
+      <VisifyNote />
     </section>
   )
 }
