@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
+import { useAccess } from '../../context/AccessContext'
 import { useCategories, useProducts } from '../../hooks/useCatalogue'
 import { ShopCard } from '../../components/customer/ShopCard'
 import { groupShopProducts } from '../../utils/shopLists'
+import { customerClosedMessage } from '../../utils/subscription'
 
 export function MenuPage() {
+  const { access } = useAccess()
   const { categories, loading: catsLoading } = useCategories()
   const { products, loading: productsLoading } = useProducts()
   const [search, setSearch] = useState('')
@@ -30,7 +33,11 @@ export function MenuPage() {
     <section className="page shop-page">
       <header className="shop-menu-head">
         <h1>Menu</h1>
-        <p>Tap a cake to enquire. Priced items show a total; custom cakes are quoted after we read your note.</p>
+        <p>
+          {access.open
+            ? 'Tap a cake to enquire. Priced items show a total; custom cakes are quoted after we read your note.'
+            : customerClosedMessage()}
+        </p>
       </header>
 
       <div className="jobs-toolbar">

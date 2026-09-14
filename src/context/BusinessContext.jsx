@@ -8,18 +8,19 @@ const BusinessContext = createContext(null)
 
 const fallbackBusiness = {
   businessId: appConfig.defaultBusinessId,
-  businessName: 'Cakes by Kee',
-  displayName: 'Cakes by Kee',
-  description:
-    'Handcrafted cakes, brownies, and custom celebration bakes. Enquiries welcome — WhatsApp continues after you submit.',
+  businessName: '',
+  displayName: '',
+  description: '',
   whatsappNumber: '',
   phone: '',
+  whatsappGreetingName: '',
   pickupAvailable: true,
   deliveryAvailable: true,
   minimumPreorderDays: 4,
   currency: 'INR',
-  instagramHandle: '_cakes_by_kee_',
-  instagramUrl: 'https://www.instagram.com/_cakes_by_kee_/',
+  kind: '',
+  instagramHandle: '',
+  instagramUrl: '',
   loadedFromFirestore: false,
 }
 
@@ -44,19 +45,22 @@ export function BusinessProvider({ children }) {
       try {
         const db = getFirestoreDb()
         const businessId = appConfig.defaultBusinessId
-        const [generalSnap, rulesSnap] = await Promise.all([
+        const [rootSnap, generalSnap, rulesSnap] = await Promise.all([
+          getDoc(doc(db, 'businesses', businessId)),
           getDoc(doc(db, 'businesses', businessId, 'settings', 'general')),
           getDoc(doc(db, 'businesses', businessId, 'settings', 'orderRules')),
         ])
 
         if (cancelled) return
 
+        const root = rootSnap.exists() ? rootSnap.data() : {}
         const general = generalSnap.exists() ? generalSnap.data() : {}
         const rules = rulesSnap.exists() ? rulesSnap.data() : {}
 
         setBusiness({
           ...fallbackBusiness,
           ...general,
+          kind: root.kind || general.kind || '',
           businessId,
           minimumPreorderDays: rules.minimumPreorderDays ?? fallbackBusiness.minimumPreorderDays,
           pickupAvailable: rules.pickupEnabled ?? general.pickupAvailable ?? true,
@@ -79,6 +83,11 @@ export function BusinessProvider({ children }) {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    const title = business.displayName || business.businessName
+    document.title = title || 'Shop'
+  }, [business.displayName, business.businessName])
 
   const saveBusiness = useCallback(async (patch) => {
     const saved = await saveBusinessSettings(patch, business.businessId)

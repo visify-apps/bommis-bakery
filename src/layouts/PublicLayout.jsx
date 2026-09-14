@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
+import { useAccess } from '../context/AccessContext'
 import { generateWhatsAppLink } from '../services/whatsapp'
 
 export function PublicLayout() {
@@ -7,6 +8,7 @@ export function PublicLayout() {
   const { pathname } = useLocation()
   const focused =
     pathname.startsWith('/custom-cake') || pathname.startsWith('/products/')
+  const { access } = useAccess()
   const phone = business.whatsappNumber || business.phone
   const wa = phone
     ? generateWhatsAppLink(phone, `Hi ${business.displayName || ''}, I'd like to ask about a cake.`)
@@ -20,7 +22,7 @@ export function PublicLayout() {
         </NavLink>
         <nav className="site-nav" aria-label="Primary">
           <NavLink to="/menu">Menu</NavLink>
-          <NavLink to="/custom-cake">Enquire</NavLink>
+          {access.open ? <NavLink to="/custom-cake">Enquire</NavLink> : null}
           {wa && wa !== '#' ? (
             <a href={wa} target="_blank" rel="noreferrer" className="site-nav__wa">
               WhatsApp

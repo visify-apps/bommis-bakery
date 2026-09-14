@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { MessageCircle } from 'lucide-react'
 import { listEnquiries } from '../../services/firestore/adminEnquiries'
 import { generateWhatsAppLink } from '../../services/whatsapp'
+import { useAccess } from '../../context/AccessContext'
+import { ownerPlanMessage } from '../../utils/subscription'
 import { buildHomeLists } from '../../utils/homeLists'
 import { dueLabel, homeDateParts, localDateKey } from '../../utils/jobDate'
 
@@ -80,6 +82,8 @@ function SummaryTile({ to, value, label, warn }) {
 }
 
 export function AdminDashboardPage() {
+  const { access } = useAccess()
+  const planNote = ownerPlanMessage(access)
   const [lists, setLists] = useState(null)
   const [loading, setLoading] = useState(true)
   const date = useMemo(() => homeDateParts(localDateKey()), [])
@@ -108,6 +112,8 @@ export function AdminDashboardPage() {
         <h1>{date.weekday}</h1>
         <p>{date.rest}</p>
       </header>
+
+      {planNote && access.open ? <p className="plan-banner">{planNote}</p> : null}
 
       {loading ? <p className="muted">Loading…</p> : null}
 

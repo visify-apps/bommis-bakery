@@ -27,13 +27,25 @@ Import from `src/data/seedCatalogue.js` (same ids). Demo app also falls back to 
 ## 4. Admin user
 
 1. Create Email/Password user in Firebase Auth.
-2. Create `businesses/cakes-by-kee/adminUsers/{uid}` with `{ "businessId": "cakes-by-kee", "email": "...", "role": "owner" }`.
+2. Create `businesses/{businessId}/adminUsers/{uid}` with `{ "businessId": "{businessId}", "email": "...", "role": "owner" }`.
 
-## 5. Demo enquiries
+## 5. Visify operator (you)
+
+Create Auth user `visifyapps@gmail.com`, then document:
+
+`visifyOperators/{yourAuthUid}`
+
+```json
+{ "email": "visifyapps@gmail.com", "role": "visify" }
+```
+
+Desk: `/#/visify` after login.
+
+## 6. Demo enquiries
 
 Optional: copy `src/data/demoEnquiries.js` into Firestore for training data.
 
-## 6. Deploy rules
+## 7. Deploy rules
 
 ```bash
 npx firebase-tools login

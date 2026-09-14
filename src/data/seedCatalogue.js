@@ -1,10 +1,11 @@
+import { appConfig } from '../config/appConfig'
+
 /**
- * Development seed catalogue for Cakes by Kee pilot.
- * Used when Firestore is empty or Firebase is not configured.
+ * Offline seed catalogue for the shop in VITE_DEFAULT_BUSINESS_ID.
  * Admin-managed Firestore remains the production source of truth.
  */
 
-export const SEED_BUSINESS_ID = 'cakes-by-kee'
+export const SEED_BUSINESS_ID = appConfig.defaultBusinessId
 
 export const seedCategories = [
   {

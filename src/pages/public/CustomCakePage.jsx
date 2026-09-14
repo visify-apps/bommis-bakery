@@ -13,6 +13,7 @@ import {
   EnquiryStepReview,
 } from '../../components/customer/EnquirySteps'
 import { useBusiness } from '../../context/BusinessContext'
+import { useAccess } from '../../context/AccessContext'
 import { useProduct } from '../../hooks/useCatalogue'
 import { createEmptyEnquiryDraft } from '../../data/enquiryOptions'
 import { buildDraftFromProduct, getEnquiryFlow } from '../../data/enquiryFlows'
@@ -22,6 +23,7 @@ import { suggestedAdvance } from '../../utils/autoPrice'
 import { customerPrice, estimateLine, isProductOffered, validateStep } from '../../utils/enquiryRules'
 import { useSmartBack } from '../../hooks/useSmartBack'
 import { AFTER_ENQUIRY_HOME_KEY } from '../../services/whatsapp'
+import { customerClosedMessage } from '../../utils/subscription'
 
 function draftKey(productId) {
   return productId ? `ck_enquiry_draft_${productId}` : 'ck_enquiry_draft_custom'
@@ -44,6 +46,7 @@ export function CustomCakePage() {
   const leave = useSmartBack(productId ? `/products/${productId}` : '/menu')
   const { product, loading: productLoading } = useProduct(productId)
   const { business } = useBusiness()
+  const { access } = useAccess()
   const minimumPreorderDays = business.minimumPreorderDays || 4
 
   const flow = useMemo(() => getEnquiryFlow(productId ? product : null), [productId, product])
@@ -212,6 +215,17 @@ export function CustomCakePage() {
           ← Back
         </button>
         <p className="muted">This item is not on the menu right now.</p>
+      </section>
+    )
+  }
+
+  if (!access.open) {
+    return (
+      <section className="page enquiry-page">
+        <button type="button" className="back-link" onClick={leave}>
+          ← Back
+        </button>
+        <p className="muted">{customerClosedMessage()}</p>
       </section>
     )
   }

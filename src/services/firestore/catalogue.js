@@ -32,12 +32,9 @@ export async function listCategories(businessId = appConfig.defaultBusinessId) {
     const ref = collection(db, ...businessPath(businessId), 'categories')
     const snap = await getDocs(query(ref, orderBy('displayOrder', 'asc')))
     const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-    if (!items.length) {
-      return sortByDisplayOrder(seedCategories.filter((c) => c.available !== false))
-    }
-    return items.filter((c) => c.available !== false)
+    return sortByDisplayOrder(items.filter((c) => c.available !== false))
   } catch {
-    return sortByDisplayOrder(seedCategories.filter((c) => c.available !== false))
+    return []
   }
 }
 
@@ -79,11 +76,10 @@ export async function listProducts(businessId = appConfig.defaultBusinessId, opt
     if (categoryId) constraints.unshift(where('categoryId', '==', categoryId))
     const snap = await getDocs(query(ref, ...constraints, orderBy('displayOrder', 'asc')))
     let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-    if (!items.length) return fromSeed()
     if (cakeOnly) items = items.filter((p) => cakeCategoryIds.has(p.categoryId))
     return sortByDisplayOrder(items)
   } catch {
-    return fromSeed()
+    return []
   }
 }
 
@@ -116,9 +112,9 @@ export async function getProduct(productId, businessId = appConfig.defaultBusine
     const db = getFirestoreDb()
     const snap = await getDoc(doc(db, ...businessPath(businessId), 'products', productId))
     if (snap.exists()) return { id: snap.id, ...snap.data() }
-    return fromLocal()
+    return null
   } catch {
-    return fromLocal()
+    return null
   }
 }
 

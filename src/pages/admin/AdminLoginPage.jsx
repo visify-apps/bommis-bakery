@@ -3,15 +3,20 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 export function AdminLoginPage() {
-  const { login, isAdmin, loading, demoMode } = useAuth()
+  const { login, isAdmin, isVisify, loading, demoMode } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState(demoMode ? 'baker@demo.local' : '')
+  const fromVisify = location.state?.from?.pathname === '/visify'
+  const [email, setEmail] = useState(demoMode ? (fromVisify ? 'visifyapps@gmail.com' : 'baker@demo.local') : '')
   const [password, setPassword] = useState(demoMode ? 'demo1234' : '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (!loading && isAdmin) {
+  if (!loading && isVisify) {
+    return <Navigate to="/visify" replace />
+  }
+
+  if (!loading && isAdmin && !fromVisify) {
     return <Navigate to={location.state?.from?.pathname || '/admin'} replace />
   }
 
@@ -20,8 +25,13 @@ export function AdminLoginPage() {
     setError('')
     setSubmitting(true)
     try {
-      await login(email.trim(), password)
-      navigate(location.state?.from?.pathname || '/admin', { replace: true })
+      const result = await login(email.trim(), password)
+      if (result.isVisify) {
+        navigate('/visify', { replace: true })
+        return
+      }
+      const from = location.state?.from?.pathname
+      navigate(from && from !== '/visify' ? from : '/admin', { replace: true })
     } catch (err) {
       setError(err?.message || 'Unable to sign in.')
     } finally {
@@ -31,8 +41,12 @@ export function AdminLoginPage() {
 
   return (
     <section className="admin-login page">
-      <h1>Baker login</h1>
-      <p className="lede">Sign in to manage enquiries and your menu.</p>
+      <h1>{fromVisify ? 'Visify login' : 'Baker login'}</h1>
+      <p className="lede">
+        {fromVisify
+          ? 'Sign in with visifyapps@gmail.com to open the desk.'
+          : 'Sign in to manage enquiries and your menu.'}
+      </p>
       <form className="stack-form" onSubmit={handleSubmit}>
         <label>
           Email

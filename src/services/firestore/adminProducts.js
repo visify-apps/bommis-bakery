@@ -49,10 +49,9 @@ export async function listAdminProducts(businessId = appConfig.defaultBusinessId
     const snap = await getDocs(
       query(collection(getFirestoreDb(), 'businesses', businessId, 'products'), orderBy('displayOrder', 'asc')),
     )
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-    return items.length ? items : readDemo()
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   } catch {
-    return readDemo()
+    return []
   }
 }
 
@@ -64,9 +63,9 @@ export async function getAdminProduct(productId, businessId = appConfig.defaultB
   try {
     const snap = await getDoc(doc(getFirestoreDb(), 'businesses', businessId, 'products', productId))
     if (snap.exists()) return { id: snap.id, ...snap.data() }
-    return readDemo().find((p) => p.id === productId) || null
+    return null
   } catch {
-    return readDemo().find((p) => p.id === productId) || null
+    return null
   }
 }
 

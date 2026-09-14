@@ -73,10 +73,9 @@ export async function listOrders(businessId = appConfig.defaultBusinessId) {
     const snap = await getDocs(
       query(collection(getFirestoreDb(), 'businesses', businessId, 'orders'), orderBy('createdAt', 'desc')),
     )
-    const items = snap.docs.map((d) => normalize(d.id, d.data()))
-    return items.length ? items : readDemo()
+    return snap.docs.map((d) => normalize(d.id, d.data()))
   } catch {
-    return readDemo()
+    return []
   }
 }
 
@@ -88,9 +87,9 @@ export async function getOrder(orderId, businessId = appConfig.defaultBusinessId
   try {
     const snap = await getDoc(doc(getFirestoreDb(), 'businesses', businessId, 'orders', orderId))
     if (snap.exists()) return normalize(snap.id, snap.data())
-    return readDemo().find((o) => o.id === orderId) || null
+    return null
   } catch {
-    return readDemo().find((o) => o.id === orderId) || null
+    return null
   }
 }
 

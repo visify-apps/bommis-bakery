@@ -80,11 +80,9 @@ export async function listEnquiries(businessId = appConfig.defaultBusinessId) {
     const db = getFirestoreDb()
     const ref = collection(db, 'businesses', businessId, 'enquiries')
     const snap = await getDocs(query(ref, orderBy('createdAt', 'desc')))
-    const items = snap.docs.map((d) => normalizeEnquiry(d.id, d.data()))
-    if (!items.length) return readDemoStore()
-    return items
+    return snap.docs.map((d) => normalizeEnquiry(d.id, d.data()))
   } catch {
-    return readDemoStore()
+    return []
   }
 }
 
@@ -103,9 +101,9 @@ export async function getEnquiry(enquiryId, businessId = appConfig.defaultBusine
     const db = getFirestoreDb()
     const snap = await getDoc(doc(db, 'businesses', businessId, 'enquiries', enquiryId))
     if (snap.exists()) return normalizeEnquiry(snap.id, snap.data())
-    return readDemoStore().find((e) => e.id === enquiryId) || null
+    return null
   } catch {
-    return readDemoStore().find((e) => e.id === enquiryId) || null
+    return null
   }
 }
 

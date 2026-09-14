@@ -1,16 +1,10 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import {
-  House,
-  BriefcaseBusiness,
-  UtensilsCrossed,
-  IndianRupee,
-  Users,
-  Settings,
-  MoreHorizontal,
-} from 'lucide-react'
+import { BarChart3, House, BriefcaseBusiness, UtensilsCrossed, IndianRupee, Users, Settings, MoreHorizontal } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useAccess } from '../context/AccessContext'
 import { useBusiness } from '../context/BusinessContext'
+import { ownerPlanMessage } from '../utils/subscription'
 
 const links = [
   { to: '/admin', end: true, label: 'Home', icon: House },
@@ -30,13 +24,21 @@ const mobileTabs = [
 
 export function AdminLayout() {
   const { business } = useBusiness()
+  const { access } = useAccess()
+  const planNote = ownerPlanMessage(access)
   const { logout, user } = useAuth()
   const location = useLocation()
+  const navLinks = [
+    ...links.slice(0, 4),
+    { to: '/admin/reports', label: 'Reports', icon: BarChart3, addon: true },
+    ...links.slice(4),
+  ]
   const onDetail =
     /\/enquiries\/[^/]+/.test(location.pathname) ||
     /\/products\/[^/]+/.test(location.pathname) ||
     /\/customers\/[^/]+/.test(location.pathname) ||
-    /\/settings$/.test(location.pathname)
+    /\/settings$/.test(location.pathname) ||
+    /\/reports\/[^/]+/.test(location.pathname)
 
   return (
     <div className={`admin-shell${onDetail ? ' admin-shell--detail' : ''}`}>
@@ -47,13 +49,14 @@ export function AdminLayout() {
         </div>
 
         <nav className="admin-rail__nav">
-          {links.map((link) => {
+          {navLinks.map((link) => {
             const Icon = link.icon
 
             return (
-              <NavLink key={link.to} to={link.to} end={link.end}>
+              <NavLink key={link.to} to={link.to} end={link.end} className={link.addon ? 'admin-nav--addon' : undefined}>
                 <Icon className="admin-nav-icon" size={18} strokeWidth={2} aria-hidden="true" />
                 <span>{link.label}</span>
+                {link.addon ? <em>Add-on</em> : null}
               </NavLink>
             )
           })}
@@ -89,6 +92,7 @@ export function AdminLayout() {
         </header>
 
         <div className="admin-content">
+          {planNote && !access.open ? <p className="plan-banner">{planNote}</p> : null}
           <Outlet />
         </div>
       </div>

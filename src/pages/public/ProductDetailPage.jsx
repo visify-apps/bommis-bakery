@@ -1,11 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
 import { useProduct } from '../../hooks/useCatalogue'
 import { customerPrice, isPieceItem, isProductOffered } from '../../utils/enquiryRules'
+import { useAccess } from '../../context/AccessContext'
+import { customerClosedMessage } from '../../utils/subscription'
 import { useSmartBack } from '../../hooks/useSmartBack'
 
 export function ProductDetailPage() {
   const { productId } = useParams()
   const goBack = useSmartBack('/menu')
+  const { access } = useAccess()
   const { product, loading } = useProduct(productId)
 
   if (loading) {
@@ -59,9 +62,13 @@ export function ProductDetailPage() {
       </div>
 
       <div className="admin-sticky-actions">
-        <Link className="btn btn-primary" to={`/custom-cake?product=${product.id}`}>
-          Enquire about this
-        </Link>
+        {access.open ? (
+          <Link className="btn btn-primary" to={`/custom-cake?product=${product.id}`}>
+            Enquire about this
+          </Link>
+        ) : (
+          <p className="muted">{customerClosedMessage()}</p>
+        )}
       </div>
     </section>
   )

@@ -12,6 +12,8 @@ import { uploadEnquiryReferenceImage } from '../storage'
 import { appendDemoEnquiry } from './adminEnquiries'
 import { normalizePhoneDigits } from '../../utils/validation'
 import { openEnquiryOnWhatsApp } from '../whatsapp'
+import { readSubscription } from './subscription'
+import { describeAccess } from '../../utils/subscription'
 
 const SUCCESS_STORAGE_KEY = 'ck_last_enquiry_success'
 
@@ -120,6 +122,10 @@ export function buildEnquiryDocument({
  */
 export async function submitEnquiry({ draft, referenceFile, submissionToken, businessId, business }) {
   const resolvedBusinessId = businessId || appConfig.defaultBusinessId
+  const access = describeAccess(await readSubscription(resolvedBusinessId))
+  if (!access.open) {
+    throw new Error('This shop is not taking orders right now.')
+  }
   const enquiryId = createEnquiryId()
   const enquiryNumber = buildEnquiryNumber(enquiryId)
   const token = submissionToken
@@ -169,7 +175,7 @@ export async function submitEnquiry({ draft, referenceFile, submissionToken, bus
   saveEnquirySuccessPayload(result)
   const whatsappUrl = openEnquiryOnWhatsApp(result.enquiry, {
     displayName: business?.displayName,
-    whatsappGreetingName: business?.whatsappGreetingName || 'Keerthana',
+    whatsappGreetingName: business?.whatsappGreetingName || business?.displayName,
     whatsappNumber: business?.whatsappNumber,
     phone: business?.phone,
   })

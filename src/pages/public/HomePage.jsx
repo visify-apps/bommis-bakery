@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useBusiness } from '../../context/BusinessContext'
+import { useAccess } from '../../context/AccessContext'
 import { useProducts } from '../../hooks/useCatalogue'
 import { ShopCard } from '../../components/customer/ShopCard'
 import { AFTER_ENQUIRY_HOME_KEY } from '../../services/whatsapp'
+import { customerClosedMessage } from '../../utils/subscription'
 
 export function HomePage() {
   const { business } = useBusiness()
+  const { access } = useAccess()
 
   useEffect(() => {
     try {
@@ -29,9 +32,13 @@ export function HomePage() {
           Celebration cakes, brownies, and bento — tell us the date, we’ll bake it with care.
         </p>
         <div className="shop-hero__actions">
-          <Link className="btn btn-primary" to="/custom-cake">
-            Start an enquiry
-          </Link>
+          {access.open ? (
+            <Link className="btn btn-primary" to="/custom-cake">
+              Start an enquiry
+            </Link>
+          ) : (
+            <p className="shop-hero__note">{customerClosedMessage()}</p>
+          )}
           <Link className="btn btn-secondary" to="/menu">
             See the menu
           </Link>

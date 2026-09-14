@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
  * Guards admin routes. Customers never use this — they have no login.
  */
 export function ProtectedRoute({ children }) {
-  const { user, adminProfile, loading } = useAuth()
+  const { user, adminProfile, isVisify, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -21,6 +21,7 @@ export function ProtectedRoute({ children }) {
   }
 
   if (!adminProfile) {
+    if (isVisify) return <Navigate to="/visify" replace />
     return (
       <div className="page-state">
         <p>
