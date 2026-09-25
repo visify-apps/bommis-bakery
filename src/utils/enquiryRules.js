@@ -9,7 +9,7 @@ import { isLikelyIndianMobile } from './validation'
 const PIECE_CATEGORIES = new Set(['brownies', 'cupcakes-lava'])
 const MAX_QTY = 200
 
-export const CAKE_SIZES = ['0.5 kg', '1 kg', '1.5 kg', '2 kg', 'Bento']
+export const CAKE_SIZES = ['0.5 kg', '1 kg', '1.5 kg', '2 kg', '2.5 kg', '3 kg', '4 kg', '5 kg', 'Bento']
 
 export function isProductOffered(product) {
   return Boolean(product && product.available !== false)
@@ -54,7 +54,7 @@ export function parseQty(value) {
 }
 
 export function validateStep(stepId, draft, options = {}) {
-  const { minimumPreorderDays = 4, referenceFile = null, product = null, mode = getFlowMode(product) } = options
+  const { minimumPreorderDays = 3, referenceFile = null, product = null, mode = getFlowMode(product) } = options
 
   if (mode === 'unavailable') return 'This item is not on the menu.'
 
@@ -104,13 +104,14 @@ export function validateStep(stepId, draft, options = {}) {
       if (!draft.preferredDate) return 'Pick a date.'
       const min = new Date()
       min.setHours(0, 0, 0, 0)
-      min.setDate(min.getDate() + Number(minimumPreorderDays || 4))
+      min.setDate(min.getDate() + Number(minimumPreorderDays || 3))
       const y = min.getFullYear()
       const m = String(min.getMonth() + 1).padStart(2, '0')
       const d = String(min.getDate()).padStart(2, '0')
       if (draft.preferredDate < `${y}-${m}-${d}`) {
         return `We need ${minimumPreorderDays} days to bake.`
       }
+      if (!String(draft.preferredTime || '').trim()) return 'Pick a delivery / pickup time.'
       return ''
     }
     case 'fulfillment': {

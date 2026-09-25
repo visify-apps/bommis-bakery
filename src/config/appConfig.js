@@ -9,8 +9,10 @@ function requiredEnv(name, fallback = '') {
 }
 
 export const appConfig = {
-  defaultBusinessId: requiredEnv('VITE_DEFAULT_BUSINESS_ID', 'cakes-by-kee'),
+  defaultBusinessId: requiredEnv('VITE_DEFAULT_BUSINESS_ID', 'bommis-bakery'),
   basePath: requiredEnv('VITE_BASE_PATH', '/'),
+  /** Standalone Visify desk (never hosted on a shop Pages URL). */
+  visifyDeskUrl: requiredEnv('VITE_VISIFY_DESK_URL', 'https://visify-apps.github.io/visify-desk/'),
   /** Off by default — Firebase Storage often needs Blaze; WhatsApp can carry reference photos. */
   enableFirebaseStorage: requiredEnv('VITE_ENABLE_FIREBASE_STORAGE', 'false') === 'true',
   firebase: {
@@ -30,4 +32,9 @@ export function isFirebaseConfigured() {
 
 export function isFirebaseStorageEnabled() {
   return isFirebaseConfigured() && appConfig.enableFirebaseStorage
+}
+
+export function openVisifyDesk() {
+  const url = appConfig.visifyDeskUrl || 'https://visify-apps.github.io/visify-desk/'
+  window.location.assign(url)
 }

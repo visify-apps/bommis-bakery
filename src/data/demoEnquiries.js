@@ -5,8 +5,8 @@
 export const demoEnquiries = [
   {
     id: 'demo-001',
-    businessId: 'cakes-by-kee',
-    enquiryNumber: 'CK-DEMO-001',
+    businessId: 'bommis-bakery',
+    enquiryNumber: 'BB-DEMO-001',
     submissionToken: 'demo-token-001',
     status: 'NEW',
     customerId: null,
@@ -51,8 +51,8 @@ export const demoEnquiries = [
   },
   {
     id: 'demo-002',
-    businessId: 'cakes-by-kee',
-    enquiryNumber: 'CK-DEMO-002',
+    businessId: 'bommis-bakery',
+    enquiryNumber: 'BB-DEMO-002',
     submissionToken: 'demo-token-002',
     status: 'QUOTE_SENT',
     customerId: null,
@@ -102,8 +102,8 @@ export const demoEnquiries = [
   },
   {
     id: 'demo-003',
-    businessId: 'cakes-by-kee',
-    enquiryNumber: 'CK-DEMO-003',
+    businessId: 'bommis-bakery',
+    enquiryNumber: 'BB-DEMO-003',
     submissionToken: 'demo-token-003',
     status: 'CONFIRMED',
     customerId: null,

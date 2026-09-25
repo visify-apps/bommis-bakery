@@ -121,7 +121,7 @@ export async function createOrderFromEnquiry(enquiry, businessId = appConfig.def
 
   const customer = await upsertCustomerFromEnquiry(enquiry, businessId)
   const orderId = createOrderId()
-  const orderNumber = `ORD-${buildEnquiryNumber(orderId).replace(/^CK-/, '')}`
+  const orderNumber = `ORD-${buildEnquiryNumber(orderId).replace(/^BB-/, '')}`
   const quotedPrice = Number(enquiry.quotedPrice) || 0
   const advanceAmount = Number(enquiry.advanceRequired) || 0
   const balanceAmount =

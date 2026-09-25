@@ -266,7 +266,7 @@ export async function createShop({ businessId, displayName, kind = 'bakery' }) {
   await setDoc(
     doc(db, 'businesses', id, 'settings', 'orderRules'),
     {
-      minimumPreorderDays: 4,
+      minimumPreorderDays: 3,
       pickupEnabled: true,
       deliveryEnabled: true,
       deliveryChargeMode: 'manual',

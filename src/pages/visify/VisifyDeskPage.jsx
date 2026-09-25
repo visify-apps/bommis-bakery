@@ -329,7 +329,7 @@ export function VisifyDeskPage() {
 
   async function signOut() {
     await logout()
-    navigate('/admin/login')
+    navigate('/login')
   }
 
   return (
@@ -394,7 +394,7 @@ export function VisifyDeskPage() {
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Cakes by Kee"
+              placeholder="Bommi's Bakery"
               autoFocus
               required
             />

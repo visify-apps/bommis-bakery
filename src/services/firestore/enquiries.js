@@ -88,6 +88,7 @@ export function buildEnquiryDocument({
     referenceNotes: draft.referenceNotes?.trim() || null,
     preferredDate: draft.preferredDate,
     preferredDateLabel: formatDisplayDate(draft.preferredDate),
+    preferredTime: draft.preferredTime?.trim() || null,
     fulfillmentType: draft.fulfillmentType,
     deliveryAddress:
       draft.fulfillmentType === 'delivery'

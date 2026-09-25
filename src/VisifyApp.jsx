@@ -1,28 +1,19 @@
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { appConfig, openVisifyDesk } from '../../config/appConfig'
-import { useAuth } from '../../context/AuthContext'
+import { HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { VisifyRoute } from './routes/VisifyRoute'
+import { VisifyDeskPage } from './pages/visify/VisifyDeskPage'
 
-export function AdminLoginPage() {
-  const { login, isAdmin, isVisify, loading, demoMode, logout } = useAuth()
+function VisifyLoginPage() {
+  const { login, isVisify, loading, demoMode, logout } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const [email, setEmail] = useState(demoMode ? 'baker@demo.local' : '')
+  const [email, setEmail] = useState(demoMode ? 'visifyapps@gmail.com' : '')
   const [password, setPassword] = useState(demoMode ? 'demo1234' : '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   if (!loading && isVisify) {
-    openVisifyDesk()
-    return (
-      <div className="page-state">
-        <p>Opening Visify desk…</p>
-      </div>
-    )
-  }
-
-  if (!loading && isAdmin) {
-    return <Navigate to={location.state?.from?.pathname || '/admin'} replace />
+    return <Navigate to="/" replace />
   }
 
   async function handleSubmit(event) {
@@ -31,17 +22,12 @@ export function AdminLoginPage() {
     setSubmitting(true)
     try {
       const result = await login(email.trim(), password)
-      if (result.isVisify) {
-        openVisifyDesk()
-        return
-      }
-      if (!result.isAdmin) {
+      if (!result.isVisify) {
         await logout()
-        setError('This account is not a baker admin for this shop.')
+        setError('This login is for Visify only. Shop bakers use their own bakery site.')
         return
       }
-      const from = location.state?.from?.pathname
-      navigate(from && !from.includes('visify') ? from : '/admin', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err?.message || 'Unable to sign in.')
     } finally {
@@ -51,8 +37,8 @@ export function AdminLoginPage() {
 
   return (
     <section className="admin-login page">
-      <h1>Baker login</h1>
-      <p className="lede">Sign in to manage enquiries and your menu.</p>
+      <h1>Visify</h1>
+      <p className="lede">Operator desk for every shop. Not a bakery admin page.</p>
       <form className="stack-form" onSubmit={handleSubmit}>
         <label>
           Email
@@ -79,13 +65,27 @@ export function AdminLoginPage() {
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-      <p className="muted" style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
-        Visify operators use{' '}
-        <a href={appConfig.visifyDeskUrl} target="_blank" rel="noreferrer">
-          the Visify desk
-        </a>
-        , not this page.
-      </p>
     </section>
+  )
+}
+
+export function VisifyApp() {
+  return (
+    <AuthProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="login" element={<VisifyLoginPage />} />
+          <Route
+            path="/"
+            element={
+              <VisifyRoute>
+                <VisifyDeskPage />
+              </VisifyRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </HashRouter>
+    </AuthProvider>
   )
 }

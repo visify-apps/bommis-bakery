@@ -21,7 +21,7 @@ export async function saveBusinessSettings(patch, businessId = appConfig.default
     phone: patch.whatsappNumber || patch.phone || '',
   }
   const rules = {
-    minimumPreorderDays: Number(patch.minimumPreorderDays) || 4,
+    minimumPreorderDays: Number(patch.minimumPreorderDays) || 3,
   }
 
   if (!isFirebaseConfigured()) {

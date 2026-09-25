@@ -1,56 +1,48 @@
-# Seed data guide
+# Seed data guide — Bommi's Bakery
 
-Use this after creating the Firebase project.
+Use this after creating the Firebase project (project id may stay `cakes-by-kee`).
 
 ## 1. Create business
 
-Document: `businesses/cakes-by-kee`
+Document: `businesses/bommis-bakery`
 
 ```json
 {
-  "businessId": "cakes-by-kee",
-  "slug": "cakes-by-kee",
+  "businessId": "bommis-bakery",
+  "slug": "bommis-bakery",
+  "displayName": "Bommi's Bakery",
+  "kind": "bakery",
   "status": "active"
 }
 ```
 
 ## 2. Settings
 
-`businesses/cakes-by-kee/settings/general` — businessName, displayName, description, phone, whatsappNumber, instagramUrl, currency `INR`, pickup/delivery flags.
+`businesses/bommis-bakery/settings/general` — Bommi's Bakery, Instagram `bommis__bakery`, WhatsApp, INR, pickup/delivery.
 
-`businesses/cakes-by-kee/settings/orderRules` — `minimumPreorderDays: 4`, `deliveryEnabled: true`, `pickupEnabled: true`, `deliveryChargeMode: "manual"`.
+`businesses/bommis-bakery/settings/orderRules` — `minimumPreorderDays: 3`, pickup + delivery on.
 
 ## 3. Categories & products
 
-Import from `src/data/seedCatalogue.js` (same ids). Demo app also falls back to this seed locally.
+Import from `src/data/seedCatalogue.js` (theme cakes, wedding/fondant, fresh cream, baking classes).
 
 ## 4. Admin user
 
-1. Create Email/Password user in Firebase Auth.
-2. Create `businesses/{businessId}/adminUsers/{uid}` with `{ "businessId": "{businessId}", "email": "...", "role": "owner" }`.
+1. Create Email/Password user in Firebase Auth (baker).
+2. Create `businesses/bommis-bakery/adminUsers/{uid}` with `{ "businessId": "bommis-bakery", "email": "...", "role": "owner" }`.
 
 ## 5. Visify operator (you)
 
-Create Auth user `visifyapps@gmail.com`, then document:
+Create Auth user `visifyapps@gmail.com`, then:
 
 `visifyOperators/{yourAuthUid}`
 
-```json
-{ "email": "visifyapps@gmail.com", "role": "visify" }
-```
+Desk lives on the **separate** Visify site: `https://visify-apps.github.io/visify-desk/` — never on the bakery Pages URL.
 
-Desk: `/#/visify` after login.
-
-## 6. Demo enquiries
-
-Optional: copy `src/data/demoEnquiries.js` into Firestore for training data.
-
-## 7. Deploy rules
+## 6. Deploy rules
 
 ```bash
 npx firebase-tools login
-npx firebase-tools use <project-id>
-npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage
+npx firebase-tools use cakes-by-kee
+npx firebase-tools deploy --only firestore:rules,firestore:indexes
 ```
-
-See `docs/security-rules.md` and `docs/deployment.md`.

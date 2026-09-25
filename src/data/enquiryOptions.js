@@ -1,13 +1,14 @@
 /**
- * Enquiry form options and defaults.
+ * Enquiry form options tuned for Bommi's Bakery Instagram order intake.
  */
 
 export const REQUEST_TYPES = [
   'Custom Cake',
-  'Regular Cake',
-  'Bento Cake',
-  'Brownies',
-  'Bulk Order',
+  'Theme Cake',
+  'Wedding Cake',
+  'Fondant Cake',
+  'Fresh Cream Cake',
+  'Baking Class',
   'Other',
 ]
 
@@ -19,13 +20,13 @@ export const OCCASIONS = [
   'Baby / Child',
   'Corporate',
   'Festival',
+  'Class / Workshop',
   'Other',
 ]
 
 export const EGG_OPTIONS = [
   { value: 'eggless', label: 'Eggless' },
   { value: 'egg', label: 'With egg' },
-  { value: '', label: 'No preference' },
 ]
 
 export const FULFILLMENT_TYPES = [
@@ -33,13 +34,20 @@ export const FULFILLMENT_TYPES = [
   { value: 'delivery', label: 'Delivery' },
 ]
 
+export const DELIVERY_TIME_SLOTS = [
+  'Morning (9–12)',
+  'Afternoon (12–4)',
+  'Evening (4–8)',
+  'Exact time on WhatsApp',
+]
+
 export const ENQUIRY_STEPS = [
   { id: 'need', title: 'Need', short: 'Need' },
   { id: 'occasion', title: 'Occasion', short: 'Occasion' },
   { id: 'requirements', title: 'Details', short: 'Details' },
   { id: 'reference', title: 'Photo', short: 'Photo' },
-  { id: 'date', title: 'Date', short: 'Date' },
-  { id: 'fulfillment', title: 'Pickup', short: 'Pickup' },
+  { id: 'date', title: 'When', short: 'When' },
+  { id: 'fulfillment', title: 'Handover', short: 'Handover' },
   { id: 'contact', title: 'You', short: 'You' },
   { id: 'review', title: 'Check', short: 'Check' },
 ]
@@ -65,6 +73,7 @@ export function createEmptyEnquiryDraft() {
     otherRequirements: '',
     referenceNotes: '',
     preferredDate: '',
+    preferredTime: '',
     fulfillmentType: 'pickup',
     deliveryAddress: {
       address: '',
@@ -90,10 +99,13 @@ export function inferRequestTypeFromProduct(product) {
   if (!product) return 'Custom Cake'
   const cat = String(product.categoryId || '').toLowerCase()
   const name = String(product.name || '').toLowerCase()
-  if (cat.includes('bento') || name.includes('bento')) return 'Bento Cake'
-  if (cat.includes('brownie') || name.includes('brownie')) return 'Brownies'
-  if (cat.includes('bulk') || name.includes('bulk')) return 'Bulk Order'
+  if (cat.includes('class') || name.includes('class') || name.includes('workshop')) {
+    return 'Baking Class'
+  }
+  if (cat.includes('wedding') || name.includes('wedding')) return 'Wedding Cake'
+  if (cat.includes('fondant') || name.includes('fondant')) return 'Fondant Cake'
+  if (cat.includes('fresh') || name.includes('cream')) return 'Fresh Cream Cake'
   if (product.requiresCustomEnquiry || product.priceType === 'enquiry') return 'Custom Cake'
-  if (cat.includes('fresh') || cat.includes('special') || cat.includes('wedding')) return 'Regular Cake'
+  if (cat.includes('theme') || name.includes('theme')) return 'Theme Cake'
   return 'Custom Cake'
 }

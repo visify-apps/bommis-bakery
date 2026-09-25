@@ -43,32 +43,45 @@ function qtyLabel(enquiry) {
  * One summary for every enquiry type: custom, menu cake, or priced pieces.
  */
 export function buildEnquiryContinuationMessage(enquiry, business = {}) {
-  const name = business.whatsappGreetingName || business.displayName || 'there'
+  const name = business.whatsappGreetingName || business.displayName || "Bommi's Bakery"
   const cake = enquiry.productName || enquiry.requestType || 'Cake enquiry'
-  const spec = [enquiry.flavour, enquiry.cakeSize, qtyLabel(enquiry), eggLabel(enquiry.eggPreference)]
-    .filter(Boolean)
-    .join(' · ')
-  const extras = [enquiry.theme, enquiry.colourPreference, enquiry.shape].filter(Boolean).join(' · ')
-  const money =
-    enquiry.quotedPrice != null && enquiry.autoPriced ? `Total ₹${enquiry.quotedPrice}` : ''
+  const qty = [enquiry.cakeSize, qtyLabel(enquiry)].filter(Boolean).join(' / ')
+  const when = [enquiry.preferredDateLabel, enquiry.preferredTime].filter(Boolean).join(' · ')
+  const place =
+    enquiry.fulfillmentType === 'delivery'
+      ? [
+          enquiry.deliveryAddress?.address,
+          enquiry.deliveryAddress?.area,
+          enquiry.deliveryAddress?.pincode,
+        ]
+          .filter(Boolean)
+          .join(', ')
+      : 'Pickup'
   const who = enquiry.customerSnapshot?.name
+  const phone = enquiry.customerSnapshot?.phoneLocal || enquiry.customerSnapshot?.phone
   const lines = [
-    `Hi ${name},`,
-    `Enquiry ${enquiry.enquiryNumber || ''}`.trim(),
-    who ? `I'm ${who}.` : '',
-    cake,
-    enquiry.occasion,
-    spec,
-    extras,
-    enquiry.messageOnCake ? `On cake: ${enquiry.messageOnCake}` : '',
-    [enquiry.preferredDateLabel, handoffLabel(enquiry)].filter(Boolean).join(' · '),
-    enquiry.deliveryAddress?.address,
-    money,
-    enquiry.otherRequirements || enquiry.referenceNotes,
+    `Hi ${name} 💛`,
+    `Order enquiry ${enquiry.enquiryNumber || ''}`.trim(),
+    who ? `Name: ${who}` : '',
+    phone ? `Phone: ${phone}` : '',
+    `Need: ${cake}`,
+    enquiry.flavour ? `Flavour: ${enquiry.flavour}` : '',
+    eggLabel(enquiry.eggPreference) ? `Egg: ${eggLabel(enquiry.eggPreference)}` : '',
+    qty ? `Quantity: ${qty}` : '',
+    when ? `Date & time: ${when}` : '',
+    place ? `Location: ${place}` : '',
+    handoffLabel(enquiry) ? `Pickup / Delivery: ${handoffLabel(enquiry)}` : '',
+    enquiry.messageOnCake ? `Name on cake: ${enquiry.messageOnCake}` : '',
+    [enquiry.theme, enquiry.colourPreference, enquiry.shape].filter(Boolean).length
+      ? `Customisation: ${[enquiry.theme, enquiry.colourPreference, enquiry.shape].filter(Boolean).join(' · ')}`
+      : '',
+    enquiry.otherRequirements || enquiry.referenceNotes
+      ? `Notes: ${enquiry.otherRequirements || enquiry.referenceNotes}`
+      : '',
   ].filter(Boolean)
 
   if (enquiry.referenceDeferredToWhatsApp || enquiry.referenceFileName) {
-    lines.push('I have a reference photo to send.')
+    lines.push('Reference pics: I have photos to send.')
   }
   return lines.join('\n')
 }

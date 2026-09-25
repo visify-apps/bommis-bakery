@@ -5,7 +5,7 @@
 export const demoOrders = [
   {
     id: 'order-demo-003',
-    businessId: 'cakes-by-kee',
+    businessId: 'bommis-bakery',
     enquiryId: 'demo-003',
     customerId: 'phone_919800000003',
     orderNumber: 'ORD-DEMO-003',
@@ -21,7 +21,7 @@ export const demoOrders = [
       name: 'Demo Customer C',
       phone: '919800000003',
     },
-    enquiryNumber: 'CK-DEMO-003',
+    enquiryNumber: 'BB-DEMO-003',
     createdAt: '2026-09-09T11:00:00.000Z',
     updatedAt: '2026-09-09T11:00:00.000Z',
   },

@@ -36,9 +36,24 @@ export function PublicLayout() {
       {!focused ? (
         <footer className="site-footer">
           <p>
-            {business.instagramHandle
-              ? `@${business.instagramHandle.replace(/^@/, '')}`
-              : `${business.minimumPreorderDays || 4} days preorder`}
+            {business.instagramHandle || business.instagramUrl ? (
+              <a
+                href={
+                  business.instagramUrl ||
+                  `https://www.instagram.com/${String(business.instagramHandle).replace(/^@/, '')}/`
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                @
+                {String(business.instagramHandle || 'bommis__bakery')
+                  .replace(/^@/, '')
+                  .replace(/.*instagram\.com\//, '')
+                  .replace(/\/.*/, '')}
+              </a>
+            ) : (
+              `${business.minimumPreorderDays || 3} days preorder · RS Puram, Coimbatore`
+            )}
           </p>
         </footer>
       ) : null}

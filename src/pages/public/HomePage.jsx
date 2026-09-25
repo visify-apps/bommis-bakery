@@ -19,36 +19,41 @@ export function HomePage() {
     }
   }, [])
   const { products, loading } = useProducts()
-  const days = business.minimumPreorderDays || 4
+  const days = business.minimumPreorderDays || 3
   const withPhoto = products.filter((p) => p.imageUrls?.[0])
   const showcase = (withPhoto.length ? withPhoto : products).slice(0, 6)
+  const ig = business.instagramHandle || business.instagramUrl || ''
 
   return (
     <div className="shop-home">
       <section className="shop-hero">
-        <p className="shop-hero__kicker">Home bakery</p>
-        <h1>{business.displayName}</h1>
+        <p className="shop-hero__kicker">Home bakery · RS Puram, Coimbatore</p>
+        <h1>{business.displayName || "Bommi's Bakery"}</h1>
         <p className="shop-hero__line">
-          Celebration cakes, brownies, and bento — tell us the date, we’ll bake it with care.
+          Big celebration cakes, fondant themes, and baking classes — order the way you already
+          message on Instagram, just clearer.
         </p>
         <div className="shop-hero__actions">
           {access.open ? (
             <Link className="btn btn-primary" to="/custom-cake">
-              Start an enquiry
+              Place a cake order
             </Link>
           ) : (
             <p className="shop-hero__note">{customerClosedMessage()}</p>
           )}
           <Link className="btn btn-secondary" to="/menu">
-            See the menu
+            Cakes & classes
           </Link>
         </div>
-        <p className="shop-hero__note">{days} days preorder · Pickup · Delivery on request</p>
+        <p className="shop-hero__note">
+          {days} days notice · Pickup or delivery ·{' '}
+          {ig ? `@${String(ig).replace(/^@/, '').replace(/.*instagram\.com\//, '').replace(/\/.*/, '')}` : 'FSSAI registered'}
+        </p>
       </section>
 
       <section className="page shop-page shop-home__menu">
         <div className="shop-section-head">
-          <h2>Loved this week</h2>
+          <h2>From the bakery</h2>
           <Link to="/menu">Full menu</Link>
         </div>
         {loading ? <p className="muted">Loading…</p> : null}

@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { openVisifyDesk } from '../config/appConfig'
 import { useAuth } from '../context/AuthContext'
 
 /**
@@ -21,12 +22,19 @@ export function ProtectedRoute({ children }) {
   }
 
   if (!adminProfile) {
-    if (isVisify) return <Navigate to="/visify" replace />
+    if (isVisify) {
+      openVisifyDesk()
+      return (
+        <div className="page-state">
+          <p>Opening Visify desk…</p>
+        </div>
+      )
+    }
     return (
       <div className="page-state">
         <p>
-          Signed in, but this account is not an admin for this bakery. Ask the owner to add your
-          UID under <code>adminUsers</code>.
+          Signed in, but this account is not an admin for this bakery. Ask Visify to add your UID
+          under <code>adminUsers</code>.
         </p>
       </div>
     )

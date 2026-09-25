@@ -35,8 +35,9 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_DEFAULT_BUSINESS_ID: cakes-by-kee
-          VITE_BASE_PATH: /cakes-by-kee/
+          VITE_DEFAULT_BUSINESS_ID: bommis-bakery
+          VITE_BASE_PATH: /bommis-bakery/
+          VITE_VISIFY_DESK_URL: https://visify-apps.github.io/visify-desk/
           VITE_ENABLE_FIREBASE_STORAGE: false
         run: npm run build
 

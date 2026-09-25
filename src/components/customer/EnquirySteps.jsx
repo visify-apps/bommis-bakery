@@ -15,7 +15,7 @@ import {
   Type,
 } from 'lucide-react'
 import { OptionGrid } from './OptionGrid'
-import { FULFILLMENT_TYPES, OCCASIONS, REQUEST_TYPES } from '../../data/enquiryOptions'
+import { FULFILLMENT_TYPES, OCCASIONS, REQUEST_TYPES, DELIVERY_TIME_SLOTS } from '../../data/enquiryOptions'
 import { formatDisplayDate, getMinPreferredDateISO } from '../../utils/enquiry'
 import { formatPrice } from '../../utils/pricing'
 import { canAutoPrice, suggestedAdvance } from '../../utils/autoPrice'
@@ -273,7 +273,7 @@ export function EnquiryStepDate({ draft, setDraft, minimumPreorderDays }) {
   const minDate = getMinPreferredDateISO(minimumPreorderDays)
   return (
     <div className="enquiry-step">
-      <Field label={`Earliest ${formatDisplayDate(minDate)}`} required>
+      <Field label={`Date of delivery / pickup · earliest ${formatDisplayDate(minDate)}`} required>
         <input
           type="date"
           min={minDate}
@@ -282,6 +282,12 @@ export function EnquiryStepDate({ draft, setDraft, minimumPreorderDays }) {
           required
         />
       </Field>
+      <OptionGrid
+        name="Time"
+        options={DELIVERY_TIME_SLOTS.map((slot) => ({ value: slot, label: slot }))}
+        value={draft.preferredTime}
+        onChange={(preferredTime) => setDraft((d) => ({ ...d, preferredTime }))}
+      />
     </div>
   )
 }
@@ -393,7 +399,7 @@ export function EnquiryStepReview({ draft, previewUrl }) {
         <Fact
           icon={draft.fulfillmentType === 'delivery' ? Truck : Package}
           label="Hand over"
-          value={`${handoff}${draft.preferredDate ? ` · ${formatDisplayDate(draft.preferredDate)}` : ''}`}
+          value={`${handoff}${draft.preferredDate ? ` · ${formatDisplayDate(draft.preferredDate)}` : ''}${draft.preferredTime ? ` · ${draft.preferredTime}` : ''}`}
         />
         <Fact icon={MapPin} label="Address" value={address} />
         <Fact icon={StickyNote} label="Note" value={draft.otherRequirements || draft.referenceNotes} />

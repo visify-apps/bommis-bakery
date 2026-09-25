@@ -5,7 +5,6 @@ import { BusinessProvider } from './context/BusinessContext'
 import { PublicLayout } from './layouts/PublicLayout'
 import { AdminLayout } from './layouts/AdminLayout'
 import { ProtectedRoute } from './routes/ProtectedRoute'
-import { VisifyRoute } from './routes/VisifyRoute'
 import { HomePage } from './pages/public/HomePage'
 import { MenuPage } from './pages/public/MenuPage'
 import { CakesPage } from './pages/public/CakesPage'
@@ -23,8 +22,8 @@ import { AdminMoneyPage } from './pages/admin/AdminMoneyPage'
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage'
 import { AdminMorePage } from './pages/admin/AdminMorePage'
 import { AdminReportsPage } from './pages/admin/AdminReportsPage'
-import { VisifyDeskPage } from './pages/visify/VisifyDeskPage'
 
+/** Shop SPA only — Visify desk is a separate deploy (visify-desk). */
 export default function App() {
   return (
     <AuthProvider>
@@ -42,15 +41,6 @@ export default function App() {
               </Route>
 
               <Route path="admin/login" element={<AdminLoginPage />} />
-
-              <Route
-                path="visify"
-                element={
-                  <VisifyRoute>
-                    <VisifyDeskPage />
-                  </VisifyRoute>
-                }
-              />
 
               <Route
                 path="admin"

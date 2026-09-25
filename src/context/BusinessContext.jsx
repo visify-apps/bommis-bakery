@@ -16,7 +16,7 @@ const fallbackBusiness = {
   whatsappGreetingName: '',
   pickupAvailable: true,
   deliveryAvailable: true,
-  minimumPreorderDays: 4,
+  minimumPreorderDays: 3,
   currency: 'INR',
   kind: '',
   instagramHandle: '',

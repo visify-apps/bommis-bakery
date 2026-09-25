@@ -27,3 +27,4 @@ serviceAccount*.json
 *.njsproj
 *.sln
 *.sw?
+dist-visify

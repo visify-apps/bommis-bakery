@@ -1,6 +1,7 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+/** Gate for the standalone Visify desk app (not hosted on shop Pages). */
 export function VisifyRoute({ children }) {
   const { user, isVisify, loading, logout } = useAuth()
   const location = useLocation()
@@ -15,7 +16,7 @@ export function VisifyRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/admin/login" replace state={{ from: location }} />
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   if (!isVisify) {
@@ -23,7 +24,7 @@ export function VisifyRoute({ children }) {
       <section className="page admin-login">
         <h1>Visify desk</h1>
         <p className="lede">
-          You’re signed in as {user.email}. That’s the baker login. Sign out, then sign in with
+          You’re signed in as {user.email}. That’s a baker login. Sign out, then use
           visifyapps@gmail.com.
         </p>
         <button
@@ -31,7 +32,7 @@ export function VisifyRoute({ children }) {
           className="btn btn-primary"
           onClick={async () => {
             await logout()
-            navigate('/admin/login', { replace: true, state: { from: location } })
+            navigate('/login', { replace: true })
           }}
         >
           Sign out

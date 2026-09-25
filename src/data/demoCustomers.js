@@ -5,7 +5,7 @@
 export const demoCustomers = [
   {
     id: 'phone_919800000001',
-    businessId: 'cakes-by-kee',
+    businessId: 'bommis-bakery',
     name: 'Demo Customer A',
     phone: '919800000001',
     email: null,
@@ -21,7 +21,7 @@ export const demoCustomers = [
   },
   {
     id: 'phone_919800000002',
-    businessId: 'cakes-by-kee',
+    businessId: 'bommis-bakery',
     name: 'Demo Customer B',
     phone: '919800000002',
     email: 'demo.b@example.com',
@@ -36,7 +36,7 @@ export const demoCustomers = [
   },
   {
     id: 'phone_919800000003',
-    businessId: 'cakes-by-kee',
+    businessId: 'bommis-bakery',
     name: 'Demo Customer C',
     phone: '919800000003',
     email: null,

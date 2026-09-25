@@ -12,5 +12,5 @@ export function buildEnquiryNumber(docId, date = new Date()) {
     .slice(-4)
     .toUpperCase()
     .padStart(4, 'X')
-  return `CK-${y}${m}${d}-${suffix}`
+  return `BB-${y}${m}${d}-${suffix}`
 }

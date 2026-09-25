@@ -1,15 +1,18 @@
 {
-  "name": "cake-store-front",
+  "name": "bommis-bakery",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:visify": "VITE_APP_TARGET=visify VITE_BASE_PATH=/ vite --open /visify/",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "build:pages": "VITE_BASE_PATH=/cakes-by-kee/ vite build",
-    "deploy:pages": "npm run build:pages && gh-pages -d dist"
+    "build:pages": "VITE_BASE_PATH=/bommis-bakery/ vite build",
+    "deploy:pages": "npm run build:pages && gh-pages -d dist",
+    "build:visify": "VITE_APP_TARGET=visify VITE_BASE_PATH=/visify-desk/ vite build && node scripts/flatten-visify-dist.mjs",
+    "deploy:visify": "npm run build:visify && gh-pages -d dist-visify -r https://github.com/visify-apps/visify-desk.git -b gh-pages"
   },
   "dependencies": {
     "firebase": "^12.10.0",

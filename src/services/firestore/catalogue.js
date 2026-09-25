@@ -45,6 +45,7 @@ export async function listCategories(businessId = appConfig.defaultBusinessId) {
 export async function listProducts(businessId = appConfig.defaultBusinessId, options = {}) {
   const { categoryId, cakeOnly = false } = options
   const cakeCategoryIds = new Set([
+    'theme-cakes',
     'custom-cakes',
     'fresh-cream',
     'wedding-fondant',
