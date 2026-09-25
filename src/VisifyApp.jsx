@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { AccessProvider } from './context/AccessContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { VisifyRoute } from './routes/VisifyRoute'
 import { VisifyDeskPage } from './pages/visify/VisifyDeskPage'
 
+/** Same login screen shape as the old shop /#/admin/login Visify path. */
 function VisifyLoginPage() {
   const { login, isVisify, loading, demoMode, logout } = useAuth()
   const navigate = useNavigate()
@@ -13,7 +15,7 @@ function VisifyLoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (!loading && isVisify) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/visify" replace />
   }
 
   async function handleSubmit(event) {
@@ -27,7 +29,7 @@ function VisifyLoginPage() {
         setError('This login is for Visify only. Shop bakers use their own bakery site.')
         return
       }
-      navigate('/', { replace: true })
+      navigate('/visify', { replace: true })
     } catch (err) {
       setError(err?.message || 'Unable to sign in.')
     } finally {
@@ -37,8 +39,8 @@ function VisifyLoginPage() {
 
   return (
     <section className="admin-login page">
-      <h1>Visify</h1>
-      <p className="lede">Operator desk for every shop. Not a bakery admin page.</p>
+      <h1>Visify login</h1>
+      <p className="lede">Sign in with visifyapps@gmail.com to open the desk.</p>
       <form className="stack-form" onSubmit={handleSubmit}>
         <label>
           Email
@@ -69,23 +71,31 @@ function VisifyLoginPage() {
   )
 }
 
+/**
+ * Standalone Visify desk — same UI/routes as the old shop /#/visify,
+ * but hosted on its own Pages site (never on a bakery URL).
+ */
 export function VisifyApp() {
   return (
     <AuthProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="login" element={<VisifyLoginPage />} />
-          <Route
-            path="/"
-            element={
-              <VisifyRoute>
-                <VisifyDeskPage />
-              </VisifyRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </HashRouter>
+      <AccessProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="admin/login" element={<VisifyLoginPage />} />
+            <Route path="login" element={<Navigate to="/admin/login" replace />} />
+            <Route
+              path="visify"
+              element={
+                <VisifyRoute>
+                  <VisifyDeskPage />
+                </VisifyRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/visify" replace />} />
+            <Route path="*" element={<Navigate to="/visify" replace />} />
+          </Routes>
+        </HashRouter>
+      </AccessProvider>
     </AuthProvider>
   )
 }

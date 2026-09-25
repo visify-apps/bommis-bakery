@@ -329,7 +329,7 @@ export function VisifyDeskPage() {
 
   async function signOut() {
     await logout()
-    navigate('/login')
+    navigate('/admin/login')
   }
 
   return (

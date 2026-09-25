@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { appConfig, openVisifyDesk } from '../../config/appConfig'
+import { openVisifyDesk } from '../../config/appConfig'
 import { useAuth } from '../../context/AuthContext'
 
 export function AdminLoginPage() {
@@ -79,13 +79,6 @@ export function AdminLoginPage() {
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-      <p className="muted" style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
-        Visify operators use{' '}
-        <a href={appConfig.visifyDeskUrl} target="_blank" rel="noreferrer">
-          the Visify desk
-        </a>
-        , not this page.
-      </p>
     </section>
   )
 }

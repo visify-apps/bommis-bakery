@@ -35,6 +35,6 @@ export function isFirebaseStorageEnabled() {
 }
 
 export function openVisifyDesk() {
-  const url = appConfig.visifyDeskUrl || 'https://visify-apps.github.io/visify-desk/'
-  window.location.assign(url)
+  const base = (appConfig.visifyDeskUrl || 'https://visify-apps.github.io/visify-desk/').replace(/\/?$/, '/')
+  window.location.assign(`${base}#/visify`)
 }
